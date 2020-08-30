@@ -1,5 +1,6 @@
 import os
 import time
+import csv
 import mido
 
 class KATANA:
@@ -8,26 +9,29 @@ class KATANA:
     readDataSysex = [0x11]                                          # bite para lectura de datos
     setDataSysex = [0x12]                                           # byte para escritura de dato
     currentDirectory = os.getcwd()                                  # Directorio actual
+    katanaOUT = None                                                # Canal Midi de salida del amplificador
+    katanaIN = None                                                 # Canal Midi de entrada del amplificador
+    
     groupNames = []                                                 # Vector con los nombres de cada grupo
     numberOfGroups = 0                                              # Numero de grupos
     bankNames = [[]]                                                # Matriz con los nombres de cada banco de cada grupo
     numberOfBanks = []                                              # Vector con el numero de bancos de cada Grupo
     patchesNames = [[[]]]                                           # Matriz 3D con los nombres de los patches de cada banco de cada grupo
     numberOfPatches = [[]]                                          # Matriz con el numero de patches de cada banco de cada grupo          
-    #patchesMatrix = [[[[]]]]                                        # Matriz 4D con los patches de cada banco de cada grupo
-    #patchChainMatrix = [[[]]]                                       # Matriz 3D con la cadena asignada a cada patch de cada banco de cada grupo                                       
-    #chainMatrix = [[]]                                              # Matriz con las 4 custom chains o default chains de cada grupo
-    #chainModeMatrix = [[]]                                          # Matriz con el tipo de cadena de cada una de las 4 cadenas de cada grupo (custom, 1, 2, 3)
-    katanaOUT = None                                                # Canal Midi de salida del amplificador
-    katanaIN = None                                                 # Canal Midi de entrada del amplificador
-    #BankPatchSizes = [[[]]]                                         # Matriz 3d con la cantidad de Patches de cada banco de cada grupo 
-    #BanksPresetSizes = [[]]                                         # Matriz 3d con la cantidad de presets de cada banco de cada grupo 
-    #currentChain = None                                             # define cual de las 4 cadenas corresponde el patch actual 
-    #currentBank = None                                              # define el banco actual
-    #currentPach = None                                              # define el patch actual
-    #currentGroup = None                                             # define el grupo actual  
-    #currentLoadedGroup = None                                       # define cual grupo se encuentra cargado en el amplificador
+    patchesMatrix = [[[[]]]]                                        # Matriz 4D con los patches de cada banco de cada grupo
+    chainMatrix = [[]]                                              # Matriz con las 4 custom chains de cada grupo
+    groupChainTypesMatrix = [[]]                                    # Matriz con el tipo de cadena de cada una de las 4 cadenas de cada grupo (0(1), 1(2), 2(3), 3(custom), 4(Panel))
+    patchChainMatrix = [[[]]]                                       # Matriz 3D con la cadena asignada a cada patch de cada banco de cada grupo (0, 1, 2, 3)                                     
     
+
+    currentChain = None                                             # define cual de las 4 (5 con panel) cadenas del grupo corresponde el patch actual 
+    currentGroup = None                                             # define el grupo actual  
+    currentBank = None                                              # define el banco actual
+    currentPach = None                                              # define el patch actual
+    #currentPreset = None                                            # define el preset actual    
+    currentLoadedGroup = None                                       # define cual grupo se encuentra cargado en el amplificador
+    presetMaxVolume = 100                                           # Define el boost de volumen
+    presetMinVolume = 70                                            # Define el valor minimo de volumen
 
         
     def __init__(self):
@@ -39,39 +43,277 @@ class KATANA:
         self.numberOfBanks = [0 for x in range(self.numberOfGroups)]
         self.patchesNames = [[[]] for x in range(self.numberOfGroups)] 
         self.numberOfPatches = [[] for x in range(self.numberOfGroups)]
-        
-        print(self.groupNames)
-        
+        self.patchesMatrix = [[[[]]] for x in range(self.numberOfGroups)]
+        #print(self.groupNames)    
+        self.groupChainTypesMatrix = [[] for x in range(self.numberOfGroups)]
+        self.patchChainMatrix = [[[]] for x in range(self.numberOfGroups)]
+        self.chainMatrix = [[] for x in range(self.numberOfGroups)] 
         for i in range (self.numberOfGroups): 
              
             self.bankNames[i] = os.listdir(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] +'/Banks')
             self.bankNames[i].sort()
             self.numberOfBanks[i]=len(self.bankNames[i])
             
-            print(self.bankNames[i])
+            #print(self.bankNames[i])
             self.patchesNames[i] = [[] for x in range(self.numberOfBanks[i])]             
             self.numberOfPatches[i] = [0 for x in range(self.numberOfBanks[i])]
+            self.patchesMatrix[i] = [[[]] for x in range(self.numberOfBanks[i])]
             
+            
+            # Carga de configuración de chains del grupo
+            
+            with open(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/chainTypes.csv' , 'r') as file :
+                for row in csv.reader(file):
+                    self.groupChainTypesMatrix[i] = row                
+                
+            for j in range(len(self.groupChainTypesMatrix[i])):
+                self.groupChainTypesMatrix[i][j] = int(self.groupChainTypesMatrix[i][j])
+                    
+            #print(self.groupChainTypesMatrix[i])            
+
+            self.patchChainMatrix[i] = [[] for x in range(self.numberOfBanks[i])]
+            self.chainMatrix[i] = [None for x in range(len(self.groupChainTypesMatrix[i]))] 
+            
+            # Carga de chains
+            for j in range(len(self.groupChainTypesMatrix[i])):
+                if self.groupChainTypesMatrix[i][j] == 3:                    
+                    self.chainMatrix[i][j] = mido.read_syx_file(self.currentDirectory +  '/GroupPresets/' + self.groupNames[i] + '/Chains/' + str(j) +'.syx')
+                #print(self.chainMatrix[i][j])     
+                      
             for j in range (self.numberOfBanks[i]):
                 
-                self.patchesNames[i][j] = os.listdir(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] +'/Banks/' + self.bankNames[i][j] + '/patches' )  
+                self.patchesNames[i][j] = os.listdir(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/Banks/' + self.bankNames[i][j] + '/patches' )  
                 self.patchesNames[i][j].sort()
                 self.numberOfPatches[i][j] = len(self.patchesNames[i][j])
-                print(self.patchesNames[i][j])
+                #print(self.patchesNames[i][j])
                 
-
-                                                           
-        self.patchesMatrix=[[None for x in range(4)] for y in range(numberOfBanks)]              # Matriz que contiene .sys de cada banco
-        self.chainMatrix=[[None for x in range(4)] for y in range(numberOfBanks)]                # Matriz que contiene Sysex de la cadena custom de cada patch
-        self.chainModeMatrix=[[None for x in range(4)] for y in range(numberOfBanks)]            # Matriz que contiene el tipo de cadena de efectos, default o custom
-        self.BankSizes=[0,0] 
+                self.patchesMatrix[i][j] = [[] for x in range(self.numberOfPatches[i][j])]
+               
+                
+                # Lectura de chainConfig
+                
+                with open(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/Banks/' + self.bankNames[i][j] + '/chainConfig.csv', 'r') as file :
+                    for row in csv.reader(file):
+                        self.patchChainMatrix[i][j] = row
+                for k in range(len(self.patchChainMatrix[i][j])):
+                    self.patchChainMatrix[i][j][k] = int(self.patchChainMatrix[i][j][k])
+                          
+                #print(self.patchChainMatrix[i][j]) 
+                
+                for k in range (self.numberOfPatches[i][j]):
+                    
+                    self.patchesMatrix[i][j][k]=mido.read_syx_file(self.currentDirectory+ '/GroupPresets/' + self.groupNames[i] + '/Banks/' + self.bankNames[i][j] + '/patches/' + self.patchesNames[i][j][k])
+                    #print(len(self.patchesMatrix[i][j][k]))
+                    
+                    # Remplazo de cabecera de FxFloor por KATANA
+                    for l in range(len(self.patchesMatrix[i][j][k])):
+                        if l==18:    
+                            tempSysex = list(self.patchesMatrix[i][j][k][l].data)                    
+                            del tempSysex[0:11]                  
+                            self.patchesMatrix[i][j][k][l]=mido.Message('sysex', data = self.initialTupleSysex + self.setDataSysex +[0x60, 0x00, 0x13, 0x00] +tempSysex)
+                        else:
+                            tempSysex = list(self.patchesMatrix[i][j][k][l].data)                 
+                            del tempSysex[0:6]
+                            self.patchesMatrix[i][j][k][l]=mido.Message('sysex', data = self.initialTupleSysex + self.setDataSysex + tempSysex)
         
-         
-
+        # Estado de preset actual                                              
+        self.currentGroup = 0                                             
+        self.currentLoadedGroup = 0
+        self.currentBank = 0                                              
+        self.currentPach = 0                                             
+        self.currentChain = self.patchChainMatrix[self.currentGroup][self.currentBank][self.currentPach]
+        #print(self.currentChain)
+        #self.currentPreset = None  
+        
+        # Parametros del preset
+        
+        self.presetMaxVolume = 100
+        self.presetMinVolume = 70                                        
+                                               
+            
+    # Conexión y lectura/escritura de datos    
+                                                           
     def initConnection(self):
         try:
-            katanaOUT = mido.open_output('KATANA MIDI 1')
-            katanaIN = mido.open_input('KATANA MIDI 1')   
+            self.katanaOUT = mido.open_output('KATANA MIDI 1')
+            self.katanaIN = mido.open_input('KATANA MIDI 1')   
             return 1
-        except ValueError:
+        except:
             return 0
+    
+    def checkSum(self, address, data):
+        vals=address+data
+        accum = 0
+        for val in vals:
+            accum = (accum + val) & 0x7F
+            cksum = (128 - accum) & 0x7F
+        return [cksum]
+
+
+    def setData(self, address, data):
+
+        msg = mido.Message('sysex', data=(self.initialTupleSysex + self.setDataSysex + address + data + self.checkSum(address,data)))
+        self.katanaOUT.send(msg)
+
+    def setRawData(self, data):
+
+        msg = mido.Message('sysex', data=data)
+        self.katanaOUT.send(msg)
+
+    def readData(self, address, offset):
+
+        msg = mido.Message('sysex', data=(self.initialTupleSysex + self.readDataSysex + address + offset + self.checkSum(address,offset)))
+        self.katanaOUT.send(msg)
+        msg = self.katanaIN.receive()
+        value = msg.bytes()
+        value.pop()
+        value.pop()
+        del value[0:12]
+        return value
+
+    # Activación y desactivación de efectos
+
+
+    def readBoost(self):
+        value = self.readData([0x60,0x00,0x00,0x30],[0x00,0x00,0x00,0x01])
+        if value==[0]:
+            return 'OFF'
+        if value==[1]:
+            return 'ON'
+
+    def setBoost(self, state):
+        if state=='ON':
+            self.setData([0x60,0x00,0x00,0x30],[0x01])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x00,0x30],[0x00])
+
+    def readMOD(self):
+        value = self.readData([0x60,0x00,0x01,0x40],[0x00,0x00,0x00,0x01])
+        if value==[0]:
+            return 'OFF'
+        if value==[1]:
+            return 'ON'
+
+    def setMOD(self, state):
+        if state=='ON':
+            self.setData([0x60,0x00,0x01,0x40],[0x01])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x01,0x40],[0x00])
+
+    def readFX(self):
+        value = self.readData([0x60,0x00,0x03,0x4C],[0x00,0x00,0x00,0x01])
+        if value==[0]:
+            return 'OFF'
+        if value==[1]:
+            return 'ON'
+
+    def setFX(self, state):
+        if state=='ON':
+            self.setData([0x60,0x00,0x03,0x4C],[0x01])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x03,0x4C],[0x00])
+
+    def readDELAY1(self):
+        value = self.readData([0x60,0x00,0x05,0x60],[0x00,0x00,0x00,0x01])
+        if value==[0]:
+            return 'OFF'
+        if value==[1]:
+            return 'ON'
+
+    def setDELAY1(self, state):
+        if state=='ON':
+            self.setData([0x60,0x00,0x05,0x60],[0x01])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x05,0x60],[0x00])
+
+    def readREVERB(self):
+        value = self.readData([0x60,0x00,0x06,0x10],[0x00,0x00,0x00,0x01])
+        if value==[0]:
+            return 'OFF'
+        if value==[1]:
+            return 'ON'
+
+    def setREVERB(self, state):
+        if state=='ON':
+            self.setData([0x60,0x00,0x06,0x10],[0x01])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x06,0x10],[0x00])
+
+
+    def readDELAY2(self):
+        value = self.readData([0x60,0x00,0x10,0x4E],[0x00,0x00,0x00,0x01])
+        if value==[0]:
+            return 'OFF'
+        if value==[1]:
+            return 'ON'
+
+    def setDELAY2(self, state):
+        if state=='ON':
+            self.setData([0x60,0x00,0x10,0x4E],[0x01])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x10,0x4E],[0x00])
+            
+
+    # FUNCIONES CON AJUSTE DE PARAMETROS
+
+    def setVolumeBoost(self, state):
+
+        if state=='ON':
+            self.setData([0x60,0x00,0x07,0x10],[self.presetMaxVolume])
+        elif state=='OFF':
+            self.setData([0x60,0x00,0x07,0x10],[self.presetMinVolume])
+
+    def setDELAY2Tempo(self, tempo):
+        if tempo<0:
+            tempo=0
+        elif tempo>2000:
+            tempo=2000
+        self.setData([0x60,0x00,0x10,0x50], [tempo>>7,tempo%128])
+    
+    
+    def changeChannel(self, channel):
+        if channel==4:
+            data=4
+        elif channel==0:
+            data=0
+        elif channel==1:
+            data=1
+        elif channel==2:
+            data=5
+        elif channel==3:
+            data=6
+            
+        msg = mido.Message('program_change', program=data)
+        self.katanaOUT.send(msg)
+        
+       
+    def loadPatch(self, preset, group, bank, patch):    
+    
+        self.setData([0x60,0x00,0x11,0x11],[0x00])
+     
+        if self.currentLoadedGroup != group:    
+            
+            if self.groupChainTypesMatrix[self.currentGroup][self.currentChain] != self.groupChainTypesMatrix[group][self.patchChainMatrix[group][bank][patch]]:     # si el preset es de un tipo distinto
+                self.katanaOUT.send(self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]])     # cargar la cadena
+                
+            elif currentChain == 4:                                                                                                                                 # si esta seleccionado panel
+                self.katanaOUT.send(self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]])     # cargar la cadena
+                
+            elif self.chainMatrix[self.currentGroup][self.currentChain].data != self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]].data:             # si la cadena custom no es la misma
+                
+                self.katanaOUT.send(self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]])     # cargar la cadena
+          
+                   
+        else:
+            self.changeChannel(self.patchChainMatrix[group][bank][patch]) 
+                   
+        
+        for i in self.patchesMatrix[group][bank][patch]:
+            katanaOUT.send(i)
+            
+        self.currentGroup = group
+        self.currentChain = self.patchChainMatrix[group][bank][patch]
+        self.currentBank = bank
+        self.currentPach = patch
+            
+        setData([0x60,0x00,0x0A,0x18],[0x01])

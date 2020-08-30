@@ -11,12 +11,12 @@ def start():
     # Instaciar
     katana=KATANA()
     
-    # Iniciar conexion con el katana
-    connectionState='Unplugged'    
-    while connectionState==Unplugged:        
+    # Iniciar conexión con el katana
+    connectionState = 'Unplugged'    
+    while connectionState=='Unplugged':        
         x=katana.initConnection()
         if x==1:
-            connectionState=='plugged'
+            connectionState = 'plugged'
         else:
             print('NO se encuentra KATANA')
             time.sleep(5)
