@@ -276,7 +276,10 @@ def setChain(bank, patch):
             katanaOUT.send(chainMatrix[bank][patch])
             currentChain=chainMatrix[bank][patch].data
     else: 
-        currentChain = 'NA'    
+        currentChain = 'NA'
+
+
+            
 def savePatch(channel, bank, patch):
 
     changeChannel(channel)   

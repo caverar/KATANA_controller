@@ -4,7 +4,6 @@ import csv
 import mido
 
 class KATANA:
-    
     initialTupleSysex = [0x41, 0x00, 0x00, 0x00, 0x00, 0x33]        # Katana ID
     readDataSysex = [0x11]                                          # bite para lectura de datos
     setDataSysex = [0x12]                                           # byte para escritura de dato
@@ -28,10 +27,10 @@ class KATANA:
     currentGroup = None                                             # define el grupo actual  
     currentBank = None                                              # define el banco actual
     currentPach = None                                              # define el patch actual
-    #currentPreset = None                                            # define el preset actual    
+    #currentPreset = None                                           # define el preset actual    
     currentLoadedGroup = None                                       # define cual grupo se encuentra cargado en el amplificador
     presetMaxVolume = 100                                           # Define el boost de volumen
-    presetMinVolume = 70                                            # Define el valor minimo de volumen
+    presetMinVolume = 60                                            # Define el valor minimo de volumen
 
         
     def __init__(self):
@@ -77,7 +76,7 @@ class KATANA:
             # Carga de chains
             for j in range(len(self.groupChainTypesMatrix[i])):
                 if self.groupChainTypesMatrix[i][j] == 3:                    
-                    self.chainMatrix[i][j] = mido.read_syx_file(self.currentDirectory +  '/GroupPresets/' + self.groupNames[i] + '/Chains/' + str(j) +'.syx')
+                    self.chainMatrix[i][j] = mido.read_syx_file(self.currentDirectory +  '/GroupPresets/' + self.groupNames[i] + '/Chains/' + str(j) +'.syx')[0]
                 #print(self.chainMatrix[i][j])     
                       
             for j in range (self.numberOfBanks[i]):
@@ -128,15 +127,15 @@ class KATANA:
         # Parametros del preset
         
         self.presetMaxVolume = 100
-        self.presetMinVolume = 70                                        
+        self.presetMinVolume = 60                                        
                                                
             
     # Conexión y lectura/escritura de datos    
-                                                           
-    def initConnection(self):
+                                  
+    def initConnection(self, input='KATANA MIDI 1', output='KATANA MIDI 1'):
         try:
-            self.katanaOUT = mido.open_output('KATANA MIDI 1')
-            self.katanaIN = mido.open_input('KATANA MIDI 1')   
+            self.katanaOUT = mido.open_output(output)
+            self.katanaIN = mido.open_input(input)   
             return 1
         except:
             return 0
@@ -287,16 +286,18 @@ class KATANA:
         self.katanaOUT.send(msg)
         
        
-    def loadPatch(self, preset, group, bank, patch):    
+    def loadPatch(self, group, bank, patch):    
     
-        self.setData([0x60,0x00,0x11,0x11],[0x00])
-     
+        #self.setData([0x60,0x00,0x11,0x11],[0x00])
+
+        
         if self.currentLoadedGroup != group:    
             
+            print('Cambio de grupo')
             if self.groupChainTypesMatrix[self.currentGroup][self.currentChain] != self.groupChainTypesMatrix[group][self.patchChainMatrix[group][bank][patch]]:     # si el preset es de un tipo distinto
                 self.katanaOUT.send(self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]])     # cargar la cadena
                 
-            elif currentChain == 4:                                                                                                                                 # si esta seleccionado panel
+            elif self.currentChain == 4:                                                                                                                             # si esta seleccionado panel
                 self.katanaOUT.send(self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]])     # cargar la cadena
                 
             elif self.chainMatrix[self.currentGroup][self.currentChain].data != self.chainMatrix[group][self.patchChainMatrix[group][bank][patch]].data:             # si la cadena custom no es la misma
@@ -307,13 +308,36 @@ class KATANA:
         else:
             self.changeChannel(self.patchChainMatrix[group][bank][patch]) 
                    
-        
-        for i in self.patchesMatrix[group][bank][patch]:
-            katanaOUT.send(i)
+        list1 = self.patchesMatrix[group][bank][patch]
+        for i in range(len(list1)-5):
+            self.katanaOUT.send(
+                list1[i])
             
         self.currentGroup = group
         self.currentChain = self.patchChainMatrix[group][bank][patch]
         self.currentBank = bank
         self.currentPach = patch
             
-        setData([0x60,0x00,0x0A,0x18],[0x01])
+        #self.setData([0x60,0x00,0x0A,0x18],[0x01])
+        
+    def saveChain(self, group, chain):
+        
+        self.changeChannel(chain)
+        #print(self.chainMatrix[group][chain])
+        self.katanaOUT.send( self.chainMatrix[group][chain])        # Mandar cadena
+        name =[0x43, 0x68, 0x61, 0x69, 0x6e, 0x3a, 0x20, 0x30 +chain ] + [0x0 for x in range(8)]
+        self.setData([0x60,0x00,0x00,0x00],name)
+        channel=''
+        if chain==0:
+            channel = 'CH1'
+        elif chain==1:
+            channel = 'CH2'
+        elif chain==2:
+            channel = 'CH1'
+        elif chain==3:
+            channel = 'CH2'
+        
+        print('Presione por el 3 segundos el botón ' + channel)
+        
+
+        
