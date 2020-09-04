@@ -11,6 +11,7 @@ class KTNAReader:
     noiseSupList = []                                                                   # Datos del supresor del ruido
     volumeDictionary = {}                                                               # Datos del controlador de volumen
     globalEqDictionary = {}                                                             # Datos del Eq global
+    pedalAssignList = []                                                                # Parametros de asignacion de funcion de pedal
 
     # Revisables:
     pedalDictionary = {}                                                                # Tipo de pedal: lista con pares de direccion y numero de datos que le corresponden al efecto
@@ -55,7 +56,12 @@ class KTNAReader:
         
         self.pedalDictionary[0x00] = [[[0x60, 0x00, 0x06, 0x26]],[6]]                   # 00-WAH
         self.pedalDictionary[0x01] = [[[0x60, 0x00, 0x06, 0x22]],[4]]                   # 01-Pedal Bend
-        self.pedalDictionary[0x02] = [[[0x60, 0x00, 0x11, 0x12]],[5]]                   # 02-Wah 95E        
+        self.pedalDictionary[0x02] = [[[0x60, 0x00, 0x11, 0x12]],[5]]                   # 02-Wah 95E  
+
+        self.pedalAssignList = [[0x60, 0x00, 0x12, 0x1F],]
+
+        
+        # { 0x121F, 3, KTN_EXP_ASSIGNS_INDEX, 3 },  // Assigns for expression pedals      
         
 
         self.boostDictionary[0x00] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 00-Mid Boost
@@ -158,8 +164,110 @@ class KTNAReader:
         self.reverbDictionary[0x05] = [[[0x60, 0x00, 0x06, 0x12]],[9]]                  # 0x05 Spring
         self.reverbDictionary[0x06] = [[[0x60, 0x00, 0x06, 0x12]],[8]]                  # 0x06 Modulate
 
+
         self.globalEqDictionary[0x00] = [[[0x00, 0x00, 0x04, 0x33]],[11]]               # 0x00 Eq parametrico
         self.globalEqDictionary[0x00] = [[[0x00, 0x00, 0x04, 0x40]],[11]]               # 0x01 Eq grafico
+
+
+
+        self.MODDictionary[0x00] = [[[0x60, 0x00, 0x01, 0x4C]],[7]]                     # 0x00 T Wah        
+        self.FXDictionary[0x00] = [[[0x60, 0x00, 0x03, 0x58]],[7]]                      # 0x00 T Wah
+
+        self.MODDictionary[0x01] = [[[0x60, 0x00, 0x01, 0x54]],[7]]                     # 0x01 Auto Wah        
+        self.FXDictionary[0x01] = [[[0x60, 0x00, 0x03, 0x60]],[7]]                      # 0x01 Auto Wah
+
+        self.MODDictionary[0x02] = [[[0x60, 0x00, 0x01, 0x5C]],[6]]                     # 0x02 Sub Wah        
+        self.FXDictionary[0x02] = [[[0x60, 0x00, 0x03, 0x68]],[6]]                      # 0x02 Sub Wah
+
+        self.MODDictionary[0x03] = [[[0x60, 0x00, 0x01, 0x63]],[5]]                     # 0x03 Compressor       
+        self.FXDictionary[0x03] = [[[0x60, 0x00, 0x03, 0x6F]],[5]]                      # 0x03 Compressor
+
+        self.MODDictionary[0x04] = [[[0x60, 0x00, 0x01, 0x69]],[6]]                     # 0x04 Limiter       
+        self.FXDictionary[0x04] = [[[0x60, 0x00, 0x03, 0x75]],[6]]                      # 0x04 Limiter
+
+        self.MODDictionary[0x06] = [[[0x60, 0x00, 0x01, 0x69]],[11]]                    # 0x06 Graphic EQ       
+        self.FXDictionary[0x06] = [[[0x60, 0x00, 0x03, 0x7C]],[11]]                     # 0x06 Graphic EQ
+
+        self.MODDictionary[0x07] = [[[0x60, 0x00, 0x01, 0x7C]],[11]]                    # 0x07 Param EQ       
+        self.FXDictionary[0x07] = [[[0x60, 0x00, 0x04, 0x08]],[11]]                     # 0x07 Param EQ
+
+        self.MODDictionary[0x09] = [[[0x60, 0x00, 0x02, 0x0E]],[5]]                     # 0x09 Guitar Sim       
+        self.FXDictionary[0x09] = [[[0x60, 0x00, 0x04, 0x1A]],[5]]                      # 0x09 Guitar Sim
+
+        self.MODDictionary[0x0A] = [[[0x60, 0x00, 0x02, 0x14]],[3]]                     # 0x0A SlowGear      
+        self.FXDictionary[0x0A] = [[[0x60, 0x00, 0x04, 0x20]],[3]]                      # 0x0A SlowGear
+
+        self.MODDictionary[0x0C] = [[[0x60, 0x00, 0x02, 0x20]],[8]]                     # 0x0C Wave Synth  
+        self.FXDictionary[0x0C] = [[[0x60, 0x00, 0x04, 0x2C]],[8]]                      # 0x0C Wave Synth
+
+        self.MODDictionary[0x0E] = [[[0x60, 0x00, 0x02, 0x31]],[3]]                     # 0x0E Octave  
+        self.FXDictionary[0x0E] = [[[0x60, 0x00, 0x04, 0x3D]],[3]]                      # 0x0E Octave
+
+        self.MODDictionary[0x0F] = [[[0x60, 0x00, 0x02, 0x35]],[15]]                    # 0x0F Pitch Shifter  
+        self.FXDictionary[0x0F] = [[[0x60, 0x00, 0x04, 0x41]],[15]]                     # 0x0F Pitch Shifter
+
+        self.MODDictionary[0x10] = [[[0x60, 0x00, 0x02, 0x45],
+                                     [0x60, 0x00, 0x07, 0x18]],[35,1]]                  # 0x10 Harmonist  
+        self.FXDictionary[0x10] = [[[0x60, 0x00, 0x04, 0x51],
+                                    [0x60, 0x00, 0x07, 0x18]],[35,1]]                   # 0x10 Harmonist
+
+        self.MODDictionary[0x12] = [[[0x60, 0x00, 0x02, 0x6E]],[7]]                     # 0x12 Acoustic Processor 
+        self.FXDictionary[0x12] = [[[0x60, 0x00, 0x04, 0x79]],[7]]                      # 0x12 Acoustic Processor
+        
+        self.MODDictionary[0x13] = [[[0x60, 0x00, 0x02, 0x75]],[8]]                     # 0x13 Phaser 
+        self.FXDictionary[0x13] = [[[0x60, 0x00, 0x05, 0x01]],[8]]                      # 0x13 Phaser
+
+        self.MODDictionary[0x14] = [[[0x60, 0x00, 0x02, 0x7E]],[8]]                     # 0x14 Flanger 
+        self.FXDictionary[0x14] = [[[0x60, 0x00, 0x05, 0x0A]],[8]]                      # 0x14 Flanger
+
+        self.MODDictionary[0x15] = [[[0x60, 0x00, 0x03, 0x07]],[4]]                     # 0x15 Tremolo 
+        self.FXDictionary[0x15] = [[[0x60, 0x00, 0x05, 0x13]],[4]]                      # 0x15 Tremolo
+
+        self.MODDictionary[0x16] = [[[0x60, 0x00, 0x03, 0x0E]],[5]]                     # 0x16 Rotary 1 
+        self.FXDictionary[0x16] = [[[0x60, 0x00, 0x05, 0x1A]],[5]]                      # 0x16 Rotary 1
+
+        self.MODDictionary[0x17] = [[[0x60, 0x00, 0x03, 0x14]],[3]]                     # 0x16 Uni-V
+        self.FXDictionary[0x17] = [[[0x60, 0x00, 0x05, 0x20]],[3]]                      # 0x16 Uni-V
+
+        self.MODDictionary[0x19] = [[[0x60, 0x00, 0x03, 0x1F]],[5]]                     # 0x19 Slicer
+        self.FXDictionary[0x19] = [[[0x60, 0x00, 0x05, 0x2B]],[5]]                      # 0x19 Slicer
+    
+        self.MODDictionary[0x1A] = [[[0x60, 0x00, 0x03, 0x25]],[5]]                     # 0x1A Vibrato
+        self.FXDictionary[0x1A] = [[[0x60, 0x00, 0x05, 0x31]],[5]]                      # 0x1A Vibrato
+
+        self.MODDictionary[0x1B] = [[[0x60, 0x00, 0x03, 0x2B]],[4]]                     # 0x1B Ring Mod
+        self.FXDictionary[0x1B] = [[[0x60, 0x00, 0x05, 0x37]],[4]]                      # 0x1B Ring Mod
+
+        self.MODDictionary[0x1C] = [[[0x60, 0x00, 0x03, 0x30]],[8]]                     # 0x1C Humanizer
+        self.FXDictionary[0x1C] = [[[0x60, 0x00, 0x05, 0x3C]],[8]]                      # 0x1C Humanizer
+
+        self.MODDictionary[0x1D] = [[[0x60, 0x00, 0x03, 0x39]],[9]]                     # 0x1D 2x2 Chorus
+        self.FXDictionary[0x1D] = [[[0x60, 0x00, 0x05, 0x45]],[9]]                      # 0x1D 2x2 Chorus
+
+        self.MODDictionary[0x1F] = [[[0x60, 0x00, 0x10, 0x10]],[4]]                     # 0x1F Acoustic Guitar Simulator
+        self.FXDictionary[0x1F] = [[[0x60, 0x00, 0x10, 0x1F]],[4]]                      # 0x1F Acoustic Guitar Simulator
+
+        self.MODDictionary[0x23] = [[[0x60, 0x00, 0x10, 0x3D]],[2]]                     # 0x23 Phaser 90E
+        self.FXDictionary[0x23] = [[[0x60, 0x00, 0x10, 0x43]],[2]]                      # 0x23 Phaser 90E
+
+        self.MODDictionary[0x24] = [[[0x60, 0x00, 0x10, 0x3F]],[4]]                     # 0x24 Flanger 117E
+        self.FXDictionary[0x24] = [[[0x60, 0x00, 0x10, 0x45]],[4]]                      # 0x24 Flanger 117E
+
+        self.MODDictionary[0x25] = [[[0x60, 0x00, 0x10, 0x68]],[5]]                     # 0x25 WAH 95E
+        self.FXDictionary[0x25] = [[[0x60, 0x00, 0x10, 0x76]],[5]]                      # 0x25 WAH 95E
+
+        self.MODDictionary[0x26] = [[[0x60, 0x00, 0x10, 0x6D]],[9]]                     # 0x26 DC30
+        self.FXDictionary[0x26] = [[[0x60, 0x00, 0x10, 0x7B]],[9]]                      # 0x26 DC30
+
+        self.MODDictionary[0x27] = [[[0x60, 0x00, 0x11, 0x17]],[3]]                     # 0x27 Heavy Octave
+        self.FXDictionary[0x27] = [[[0x60, 0x00, 0x11, 0x1A]],[3]]                      # 0x27 Heavy Octave
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
    ktnaReader=KTNAReader()
