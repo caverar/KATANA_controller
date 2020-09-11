@@ -74,15 +74,13 @@ def start():
             print('NO se encuentra KATANA')
             time.sleep(5)
 
-    first=katana.readData([0x60, 0x00, 0x03, 0x7C],[0x00,0x00,0x00,0x04])
-    print('first:')
-    print(first)
-    second=katana.readData([0x60, 0x00, 0x04, 0x00],[0x00,0x00,0x00,0x07])
-    print('second')
-    print(second) 
 
-    full=katana.readData([0x60, 0x00, 0x03, 0x7C],[0x00,0x00,0x00,0x0B]) 
-    print('full:')
+
+    full=katana.readData([0x60, 0x00, 0x07, 0x20],[0x00,0x00,0x00,0x14]) 
+    print('pedal chain:')
+    print(full)
+    for i in range(len(full)):
+        full[i]=hex(full[i])
     print(full)        
     
 if __name__ == '__main__':
