@@ -61,27 +61,19 @@ def start1():
             katana.changeChannel(1)
 
 def start():
-    katana=KATANA()
-    print('Conexion funcional')
+    katana=KATANA()    
 
     # Iniciar conexión con el katana
     connectionState = 'Unplugged'    
     while connectionState=='Unplugged':
         x=katana.initConnection(input='KATANA 0', output='KATANA 1')
         if x==1:
+            print('Conexion funcional')
             connectionState = 'plugged'
         else:
             print('NO se encuentra KATANA')
             time.sleep(5)
-
-
-
-    full=katana.readData([0x60, 0x00, 0x07, 0x20],[0x00,0x00,0x00,0x14]) 
-    print('pedal chain:')
-    print(full)
-    for i in range(len(full)):
-        full[i]=hex(full[i])
-    print(full)        
+      
     
 if __name__ == '__main__':
     start()

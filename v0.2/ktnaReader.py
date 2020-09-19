@@ -1,7 +1,7 @@
 import os
-import mido
 import time
-
+import csv
+import mido
 class KTNAReader:
     
     # Objetos de conexion
@@ -42,9 +42,9 @@ class KTNAReader:
     # PatchData (midi SysEx messages)
     patchChain = None
     patchChainMsg = None
-    patchEnableDirectory = {} 
-    voidSysExMsg =mido.Message('program_change', program=0)                                                            # Mensaje con la cadena del patch
-    patchData = [None for x in range(50)]                                                                    # Conjunto de mensajes con el parche
+    patchEnableDirectory = {}                                                           # Directorio con el estado de habilitación de cada tipo de efectos de la cadena
+    voidSysExMsg =mido.Message('program_change', program=0)                             # Mensaje con la cadena del patch
+    patchData = [None for x in range(50)]                                               # Conjunto de mensajes con el parche
     patchPedalFXType = None                                                               
     patchBoostType = None
     patchAmpType = None
@@ -56,9 +56,9 @@ class KTNAReader:
     patchMODType = None
     patchGlobalEqType = None
   
+    # CurrentData    
 
     
-
     
     def __init__(self):
         
@@ -389,15 +389,6 @@ class KTNAReader:
         return [cksum]
 
 
-    def setData(self, address, data):
-
-        msg = mido.Message('sysex', data=(self.initialTupleSysex + self.setDataSysex + address + data + self.checkSum(address,data)))
-        self.katanaOUT.send(msg)
-
-    def setRawData(self, data):
-
-        msg = mido.Message('sysex', data=data)
-        self.katanaOUT.send(msg)
 
     def readData(self, address, offset):
 
@@ -413,19 +404,16 @@ class KTNAReader:
     
     def readFullData(self, address, offset):
 
-
         msg = mido.Message('sysex', data=(self.initialTupleSysex + self.readDataSysex + address + offset + self.checkSum(address,offset)))
         self.katanaOUT.send(msg)
         msg = self.katanaIN.receive()
-
         postData = list(msg.bytes())
         postData.pop()
         postData.pop()
         del postData[0:12]
         rawData = list(msg.bytes())
         rawData.pop()
-        del rawData[0]   
-
+        del rawData[0]
         return [postData,rawData] 
 
     def readRawData(self, address, offset):
@@ -440,16 +428,16 @@ class KTNAReader:
 
 
     def readCurrentPatchFromKatana(self):
+
             print('Reading Patch...')
 
-
             # --Cadena de efectos------------------------------------------------------
+
             self.patchChain = self.readRawData(self.chainList[0], [0x00,0x00,0x00, self.chainList[1]])
             self.patchChain[6] = self.setDataSysex[0] 
             self.patchChainMsg = mido.Message('sysex',data=self.patchChain)
    
             # --Lectura de tipos de pedales--------------------------------------------
-
 
             # Tipo de PedalFX
             address = self.pedalSelectorAddressDirectory['PedalFX'][0]
@@ -537,7 +525,6 @@ class KTNAReader:
             self.patchFXType = msg[0][0]
             msg[1][6] = self.setDataSysex[0]
             self.patchData[10] = mido.Message('sysex',data=msg[1])
-
 
             
             # --Estado de efectos------------------------------------------------------
@@ -725,7 +712,7 @@ class KTNAReader:
                 self.patchData[self.index] = mido.Message('sysex',data=msg)
                 self.index += 1
 
-            # --Delay1 Type------------------------------------------------------------
+            # --Delay2 Type------------------------------------------------------------
 
             address = self.delay2Dictionary[self.patchDelay2Type][0]
             offset = [[0x00, 0x00, 0x00, self.delay2Dictionary[self.patchDelay2Type][1][x]] for x in range(len(self.delay2Dictionary[self.patchDelay2Type][1]))]
@@ -769,10 +756,6 @@ class KTNAReader:
                 self.patchData[self.index] = mido.Message('sysex',data=msg)
                 self.index += 1
 
-            # --FX Type----------------------------------------------------------------
-
-            #print(self.index)
-            #print(hex(self.patchFXType))
 
             address = self.FXDictionary[self.patchFXType][0]
             offset = [[0x00, 0x00, 0x00, self.FXDictionary[self.patchFXType][1][x]] for x in range(len(self.FXDictionary[self.patchFXType][1]))]
@@ -781,25 +764,45 @@ class KTNAReader:
                 msg = self.readRawData(address[i],offset[i])
                 msg[6] = self.setDataSysex[0]
                 self.patchData[self.index] = mido.Message('sysex',data=msg)
-                #print(self.patchData[(self.index)])
                 self.index += 1
 
-            #print(self.index)
-
-            # --Estado de efectos------------------------------------------------------              
+            # --END--------------------------------------------------------------------
 
 
-            #msg = mido.Message('sysex',data=self.patchChain)            
-            mido.write_syx_file('patch.syx', self.patchData)
-
-
-
-
-            
 
             
             print('Patch Reading complete')
 
+    
+    def saveToTempData(self):
+        
+        mido.write_syx_file('tempPatch.syx', self.patchData)
+        mido.write_syx_file('tempChain.syx', [self.patchChainMsg])
+        
+        print(self.patchEnableDirectory)
+
+        with open('tempPatchEnableDirectory.csv', 'w') as f:
+            for key in self.patchEnableDirectory.keys():
+                f.write("%s,%s\n"%(key,self.patchEnableDirectory[key]))
+
+
+
+#    def readCurrentData(self):
+#        self.groupNames = os.listdir(self.currentDirectory + '/GroupPresets')
+#        
+#        #currentDirectory 
+#
+#    def newGroup(self):
+#        print('TODO')
+#    
+#    def newBank(self):
+#        print('TODO')
+#
+#    def newChian(self):
+#        print('TODO')
+#    
+#    def newPatch(self):
+#        print('TODO')
 
 
 if __name__ == "__main__":
@@ -819,6 +822,21 @@ if __name__ == "__main__":
             time.sleep(5)
     
     ktnaReader.readCurrentPatchFromKatana()
+    ktnaReader.saveToTempData()
+    
+    # Lectura de prueba
+    #ktnaReader.readCurrentPatchFromKatana()
+    #value = ktnaReader.readData([0x60,0x00,0x12,0x1F],[0x00,0x00,0x00,0x01])
+    #print(value)
+    # Escritura de prueba
+    # msg = mido.Message('program_change', program=4)
+    # x = input('Cambie el parche actual  y presione Enter')
+    # ktnaReader.katanaOUT.send(msg)
+    # for x in ktnaReader.patchData:        
+       # ktnaReader.katanaOUT.send(x)
+
+
+
 
 
         

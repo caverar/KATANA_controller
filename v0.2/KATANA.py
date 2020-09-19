@@ -4,7 +4,8 @@ import csv
 import mido
 
 class KATANA:
-    initialTupleSysex = [0x41, 0x00, 0x00, 0x00, 0x00, 0x33]        # Katana ID
+
+    initialTupleSysex = [0x41, 0x00, 0x00, 0x00, 0x00, 0x33]        # """ Katana ID """
     readDataSysex = [0x11]                                          # bite para lectura de datos
     setDataSysex = [0x12]                                           # byte para escritura de dato
     currentDirectory = os.getcwd()                                  # Directorio actual
@@ -15,13 +16,20 @@ class KATANA:
     numberOfGroups = 0                                              # Numero de grupos
     bankNames = [[]]                                                # Matriz con los nombres de cada banco de cada grupo
     numberOfBanks = []                                              # Vector con el numero de bancos de cada Grupo
+    
+    chainMatrix = [[]]                                              # Matriz con las 4 custom chains de cada grupo
+    patchChainMatrix = [[[]]]                                       # Matriz 3D con la cadena asignada a cada patch de cada banco de cada grupo (0, 1, 2, 3, 4(Panel (default 2 con postEQ y preEXP)))                                     
+
     patchesNames = [[[]]]                                           # Matriz 3D con los nombres de los patches de cada banco de cada grupo
     numberOfPatches = [[]]                                          # Matriz con el numero de patches de cada banco de cada grupo          
-    patchesMatrix = [[[[]]]]                                        # Matriz 4D con los patches de cada banco de cada grupo
-    chainMatrix = [[]]                                              # Matriz con las 4 custom chains de cada grupo
-    groupChainTypesMatrix = [[]]                                    # Matriz con el tipo de cadena de cada una de las 4 cadenas de cada grupo (0(1), 1(2), 2(3), 3(custom), 4(Panel))
-    patchChainMatrix = [[[]]]                                       # Matriz 3D con la cadena asignada a cada patch de cada banco de cada grupo (0, 1, 2, 3)                                     
+    patchesMatrix = [[[[]]]]                                        # Matriz 4D con los patches de cada banco de cada grupo    
+    patchEnableFCMatrix = [[[{}]]]                                  # Matriz 3D con un diccionario en su interior, que contiene el estado de los efectos de cada patch Enable de cada banco de cada grupo                    
+        
     
+    #presetsNames = [[[]]]                                           # Matriz 3D con los nombres de los presets de cada banco de cada grupo
+    #numberOfPresets = [[]]                                          # Matriz con el numero de presets de cada banco de cada grupo 
+    #presetsMatrix = [[[[]]]]                                        # Matriz presets...       
+
 
     currentChain = None                                             # define cual de las 4 (5 con panel) cadenas del grupo corresponde el patch actual 
     currentGroup = None                                             # define el grupo actual  
@@ -34,51 +42,59 @@ class KATANA:
 
         
     def __init__(self):
-              
+
         self.groupNames = os.listdir(self.currentDirectory + '/GroupPresets')
         self.numberOfGroups = len(self.groupNames)        
 
+        self.patchChainMatrix = [[[]] for x in range(self.numberOfGroups)]
+        self.chainMatrix = [[] for x in range(self.numberOfGroups)]
+
         self.bankNames = [[] for x in range(self.numberOfGroups)]
         self.numberOfBanks = [0 for x in range(self.numberOfGroups)]
+
+
+
         self.patchesNames = [[[]] for x in range(self.numberOfGroups)] 
         self.numberOfPatches = [[] for x in range(self.numberOfGroups)]
         self.patchesMatrix = [[[[]]] for x in range(self.numberOfGroups)]
+        self.patchEnableFXMatrix = [[[{}]] for x in range(self.numberOfGroups)]
+
+
+
+        #self.presetsNames = [[[]] for x in range(self.numberOfGroups)] 
+        #self.numberOfPresets = [[] for x in range(self.numberOfGroups)]
+        #self.presetsMatrix = [[[[]]] for x in range(self.numberOfGroups)]
+
+
         #print(self.groupNames)    
-        self.groupChainTypesMatrix = [[] for x in range(self.numberOfGroups)]
-        self.patchChainMatrix = [[[]] for x in range(self.numberOfGroups)]
-        self.chainMatrix = [[] for x in range(self.numberOfGroups)] 
-        for i in range (self.numberOfGroups): 
+
+        for i in range (self.numberOfGroups):
              
             self.bankNames[i] = os.listdir(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] +'/Banks')
             self.bankNames[i].sort()
             self.numberOfBanks[i]=len(self.bankNames[i])
             
-            #print(self.bankNames[i])
+            #print(self.bankNames[i]) 
+
+            self.patchChainMatrix[i] = [0 for x in range(self.numberOfBanks[i])]
+
+
             self.patchesNames[i] = [[] for x in range(self.numberOfBanks[i])]             
             self.numberOfPatches[i] = [0 for x in range(self.numberOfBanks[i])]
             self.patchesMatrix[i] = [[[]] for x in range(self.numberOfBanks[i])]
-            
-            
-            # Carga de configuración de chains del grupo
-            
-            with open(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/chainTypes.csv' , 'r') as file :
-                for row in csv.reader(file):
-                    self.groupChainTypesMatrix[i] = row                
-                
-            for j in range(len(self.groupChainTypesMatrix[i])):
-                self.groupChainTypesMatrix[i][j] = int(self.groupChainTypesMatrix[i][j])
-                    
-            #print(self.groupChainTypesMatrix[i])            
 
-            self.patchChainMatrix[i] = [[] for x in range(self.numberOfBanks[i])]
-            self.chainMatrix[i] = [None for x in range(len(self.groupChainTypesMatrix[i]))] 
-            
+
             # Carga de chains
-            for j in range(len(self.groupChainTypesMatrix[i])):
-                if self.groupChainTypesMatrix[i][j] == 3:                    
-                    self.chainMatrix[i][j] = mido.read_syx_file(self.currentDirectory +  '/GroupPresets/' + self.groupNames[i] + '/Chains/' + str(j) +'.syx')[0]
-                #print(self.chainMatrix[i][j])     
-                      
+
+            self.chainMatrix[i] = [None for x in range(4)] 
+                
+            localChainList = os.listdir(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/Chains/')
+            localChainList.sort()
+            #print(localChainList)
+            for j in localChainList:
+                self.chainMatrix[i][int(j[0])] = mido.read_syx_file(self.currentDirectory +  '/GroupPresets/' + self.groupNames[i] + '/Chains/' + j[0] +'.syx')[0]
+ 
+
             for j in range (self.numberOfBanks[i]):
                 
                 self.patchesNames[i][j] = os.listdir(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/Banks/' + self.bankNames[i][j] + '/patches' )  
@@ -87,33 +103,28 @@ class KATANA:
                 #print(self.patchesNames[i][j])
                 
                 self.patchesMatrix[i][j] = [[] for x in range(self.numberOfPatches[i][j])]
-               
                 
-                # Lectura de chainConfig
+                self.patchChainMatrix[i][j] = [None for x in range(self.numberOfPatches[i][j])]
+                
+                # Lectura de chainConfig (Que cadena le corresponde a cada pàtch)
                 
                 with open(self.currentDirectory + '/GroupPresets/' + self.groupNames[i] + '/Banks/' + self.bankNames[i][j] + '/chainConfig.csv', 'r') as file :
                     for row in csv.reader(file):
                         self.patchChainMatrix[i][j] = row
+                
+
                 for k in range(len(self.patchChainMatrix[i][j])):
                     self.patchChainMatrix[i][j][k] = int(self.patchChainMatrix[i][j][k])
-                          
-                #print(self.patchChainMatrix[i][j]) 
+
+                # Lectura de patches
                 
                 for k in range (self.numberOfPatches[i][j]):
                     
                     self.patchesMatrix[i][j][k]=mido.read_syx_file(self.currentDirectory+ '/GroupPresets/' + self.groupNames[i] + '/Banks/' + self.bankNames[i][j] + '/patches/' + self.patchesNames[i][j][k])
                     #print(len(self.patchesMatrix[i][j][k]))
-                    
-                    # Remplazo de cabecera de FxFloor por KATANA
-                    for l in range(len(self.patchesMatrix[i][j][k])):
-                        if l==18:    
-                            tempSysex = list(self.patchesMatrix[i][j][k][l].data)                    
-                            del tempSysex[0:11]                  
-                            self.patchesMatrix[i][j][k][l]=mido.Message('sysex', data = self.initialTupleSysex + self.setDataSysex +[0x60, 0x00, 0x13, 0x00] +tempSysex)
-                        else:
-                            tempSysex = list(self.patchesMatrix[i][j][k][l].data)                 
-                            del tempSysex[0:6]
-                            self.patchesMatrix[i][j][k][l]=mido.Message('sysex', data = self.initialTupleSysex + self.setDataSysex + tempSysex)
+
+                # Lectura del chainEnable de los patches 
+                   
         
         # Estado de preset actual                                              
         self.currentGroup = 0                                             
@@ -262,6 +273,13 @@ class KATANA:
         elif state=='OFF':
             self.setData([0x60,0x00,0x07,0x10],[self.presetMinVolume])
 
+    def setDELAY1Tempo(self, tempo):
+        if tempo<0:
+            tempo=0
+        elif tempo>2000:
+            tempo=2000
+        self.setData([0x60,0x00,0x05,0x62], [tempo>>7,tempo%128])
+
     def setDELAY2Tempo(self, tempo):
         if tempo<0:
             tempo=0
@@ -319,13 +337,14 @@ class KATANA:
         self.currentPach = patch
             
         #self.setData([0x60,0x00,0x0A,0x18],[0x01])
+
         
-    def saveChain(self, group, chain):
+    def setChainOnKatana(self, group, chain):
         
         self.changeChannel(chain)
         #print(self.chainMatrix[group][chain])
         self.katanaOUT.send( self.chainMatrix[group][chain])        # Mandar cadena
-        name =[0x43, 0x68, 0x61, 0x69, 0x6e, 0x3a, 0x20, 0x30 +chain ] + [0x0 for x in range(8)]
+        name =[0x43, 0x68, 0x61, 0x69, 0x6e, 0x3a, 0x20, 0x30 + chain ] + [0x0 for x in range(8)]
         self.setData([0x60,0x00,0x00,0x00],name)
         channel=''
         if chain==0:
@@ -337,7 +356,7 @@ class KATANA:
         elif chain==3:
             channel = 'CH2'
         
-        print('Presione por el 3 segundos el botón ' + channel)
+        print('Presione por 3 segundos el botón ' + channel)
         
 
         
