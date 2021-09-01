@@ -9,10 +9,10 @@ maxVolume=0x64
 minVolume=0x32
 
 
-#changeChannel('CHA2')
+#changeChannel("CHA2")
 #offBoost()
 
-#msg = mido.Message('sysex', data=(initialTupleSysex + readDataSysex+[0x00,0x00,0x04,0x10]+[0x00,0x00,0x00,0x01]+checkSum([0x00,0x00,0x04,0x10],[0x00,0x00,0x00,0x01])))
+#msg = mido.Message("sysex", data=(initialTupleSysex + readDataSysex+[0x00,0x00,0x04,0x10]+[0x00,0x00,0x00,0x01]+checkSum([0x00,0x00,0x04,0x10],[0x00,0x00,0x00,0x01])))
 #print(msg.bytes())
 
 
@@ -28,31 +28,31 @@ minVolume=0x32
 #     x=int(input("Ingrese ampli "))
 #     print(x)
 #     if x==0: ## DRY
-#         KTNAcommands.setBoost('ON')
-#         KTNAcommands.setFX('OFF')
-#         KTNAcommands.setMOD('OFF')
-#         KTNAcommands.setDELAY2('OFF')
-#         KTNAcommands.setREVERB('OFF')
-#         KTNAcommands.setVolumeBoost('OFF', minVolume, maxVolume)
+#         KTNAcommands.setBoost("ON")
+#         KTNAcommands.setFX("OFF")
+#         KTNAcommands.setMOD("OFF")
+#         KTNAcommands.setDELAY2("OFF")
+#         KTNAcommands.setREVERB("OFF")
+#         KTNAcommands.setVolumeBoost("OFF", minVolume, maxVolume)
 
 #     elif x==1: ## ChOrus
-#         KTNAcommands.setFX('ON')
-#         KTNAcommands.setMOD('OFF')
-#         KTNAcommands.setDELAY2('OFF')
-#         KTNAcommands.setREVERB('OFF')
-#         KTNAcommands.setVolumeBoost('OFF', minVolume, maxVolume)
+#         KTNAcommands.setFX("ON")
+#         KTNAcommands.setMOD("OFF")
+#         KTNAcommands.setDELAY2("OFF")
+#         KTNAcommands.setREVERB("OFF")
+#         KTNAcommands.setVolumeBoost("OFF", minVolume, maxVolume)
 #     elif x==2: ## Violin
-#         KTNAcommands.setFX('OFF')
-#         KTNAcommands.setMOD('ON')
-#         KTNAcommands.setDELAY2('OFF')
-#         KTNAcommands.setREVERB('OFF')
-#         KTNAcommands.setVolumeBoost('OFF', minVolume, maxVolume)
+#         KTNAcommands.setFX("OFF")
+#         KTNAcommands.setMOD("ON")
+#         KTNAcommands.setDELAY2("OFF")
+#         KTNAcommands.setREVERB("OFF")
+#         KTNAcommands.setVolumeBoost("OFF", minVolume, maxVolume)
 #     elif x==3: ##solo
-#         KTNAcommands.setFX('OFF')
-#         KTNAcommands.setMOD('OFF')
-#         KTNAcommands.setDELAY2('ON')
-#         KTNAcommands.setREVERB('ON')
-#         KTNAcommands.setVolumeBoost('ON', minVolume, maxVolume)
+#         KTNAcommands.setFX("OFF")
+#         KTNAcommands.setMOD("OFF")
+#         KTNAcommands.setDELAY2("ON")
+#         KTNAcommands.setREVERB("ON")
+#         KTNAcommands.setVolumeBoost("ON", minVolume, maxVolume)
 
 
 
@@ -97,13 +97,13 @@ def start():
             KTNAcommands.setChain(0,0)
         elif x==9:
             
-            KTNAcommands.savePatch('CHA1',0,0)
-            KTNAcommands.savePatch('CHA2',0,1)
-            KTNAcommands.savePatch('CHB1',0,2)
-            KTNAcommands.savePatch('CHB2',0,3)
+            KTNAcommands.savePatch("CHA1",0,0)
+            KTNAcommands.savePatch("CHA2",0,1)
+            KTNAcommands.savePatch("CHB1",0,2)
+            KTNAcommands.savePatch("CHB2",0,3)
             
 
     
-if __name__ == '__main__':
+if __name__ == "__main__":
     start()
     

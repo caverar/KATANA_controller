@@ -1,0 +1,148 @@
+{
+    "PedalFXEnable": {
+        "name": "PEDAL FX",
+        "type": "LATCH",
+        "MIDIType" : "SysEx",
+        "address" : [96,0,6,32],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq" : null,
+        "curve" : null
+    },
+    "BoostEnable": {
+        "name": "BOOST/OVD",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,0,48],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    "NoiseSupEnable": {
+        "name": "NOISE SUP",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,6,99],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    "EqEnable": {
+        "name": "EQ",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,1,48],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    "Delay1Enable": {
+        "name": "DELAY 1",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,5,96],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    "Delay2Enable": {
+        "name": "DELAY 2",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,16,78],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    "ReverbEnable": {
+        "name": "REVERB",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,6,16],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    }, 
+    "GlobalEqEnable": {
+        "name": "GLOBAL EQ",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [0,0,4,50],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    "MODEnable": {
+        "name": "MODULATION",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,1,64],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    }, 
+    "FXEnable": {
+        "name": "FX",
+        "type": "LATCH",
+        "MIDIType": "SysEx",
+        "address": [96,0,3,76],
+        "size": 1,
+        "ON_MAX": 1,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    
+    "pageUp": {
+        "name": "PAGE UP",
+        "type": "PAGE",
+        "MIDIType": "INTERNAL",
+        "address": [0,0,0,0],
+        "size": 1,
+        "ON_MAX": 0,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    },
+    
+    "pageDown": {
+        "name": "PAGE DOWN",
+        "type": "PAGE",
+        "MIDIType": "INTERNAL",
+        "address": [0,0,0,0],
+        "size": 0,
+        "ON_MAX": 0,
+        "OFF_MAX": 0,
+        "group": 0,
+        "freq": null,
+        "curve": null
+    } 
+}

@@ -1,0 +1,18 @@
+{
+    "0":{
+        "0": ["PAGE UP",["pageUp"]],
+        "1": ["PEDAL FX",["PedalFXEnable"]],
+        "2": ["BOOST/OVD",["BoostEnable"]],
+        "3": ["NOISE SUP",["NoiseSupEnable"]],
+        "4": ["EQ",["EqEnable"]],
+        "5": ["DELAY 1",["Delay1Enable"]]
+    },
+    "1":{
+        "0": ["PAGE DOWN",["pageDown"]],
+        "1": ["DELAY 2",["Delay2Enable"]],
+        "2": ["REVERB",["ReverbEnable"]],
+        "3": ["GLOBALEQ",["GlobalEqEnable"]],
+        "4": ["MOD",["MODEnable"]],
+        "5": ["FX",["FXEnable"]]
+    }
+}

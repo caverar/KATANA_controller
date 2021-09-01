@@ -2,48 +2,48 @@ import os
 import time
 import csv
 import mido
-class KTNAReader:
-    
-    # Objetos de conexion
 
-    initialTupleSysex = [0x41, 0x00, 0x00, 0x00, 0x00, 0x33]        # Katana ID
-    readDataSysex = [0x11]                                          # bite para lectura de datos
-    setDataSysex = [0x12]                                           # byte para escritura de dato
-    currentDirectory = os.getcwd()                                  # Directorio actual
-    katanaOUT = None                                                # Canal Midi de salida del amplificador
-    katanaIN = None                                                 # Canal Midi de entrada del amplificador
+class KatanaReader:        
+    # Objetos de conexión
+    initial_tuple_sysex = [0x41, 0x00, 0x00, 0x00, 0x00, 0x33]      # Katana ID
+    read_data_sysex = [0x11]                                        # byte para lectura de datos
+    set_data_sysex = [0x12]                                         # byte para escritura de datos
+    current_directory = os.getcwd()                                 # Directorio actual
+    katana_out = None                                               # Canal Midi de salida del amplificador
+    katana_in = None                                                # Canal Midi de entrada del amplificador
     
-    # Utilidades de codigo
+    # Utilidades de código
 
-    pedalList = ['PedalFX','Boost', 'Amp','NoiseSup', 'Volume', 'Eq', 'Delay1', 'Delay2', 'Reverb', 'FX', 'MOD', 'GlobalEq', 'Cab']
+    pedalList = ["PedalFX","Boost", "Amp","NoiseSup", "Volume", "Eq", "Delay1", 
+                "Delay2", "Reverb", "FX", "MOD", "GlobalEq", "Cab"]
 
     # Obligatorios:
-    pedalEnableAddressDirectory = {}                                                    # Direcciones de habilitación de efectos 
-    pedalSelectorAddressDirectory = {}                                                  # Direcciones de selección de efectos
-    noiseSupList = []                                                                   # Datos del supresor del ruido
-    volumeList = []                                                                     # Datos del controlador de volumen
-    globalEqDictionary = {}                                                             # Datos del Eq global
-    EXPAssignList = []                                                                  # Asignador de parametro controlado por el pedal de expresión
-    chainList = []                                                                      # Lista con registros y numero de datos del orden de la cadena de efectos
+    pedalEnableAddressDirectory = {}                                # Direcciones de habilitación de efectos 
+    pedalSelectorAddressDirectory = {}                              # Direcciones de selección de efectos
+    noiseSupList = []                                               # Datos del supresor del ruido
+    volumeList = []                                                 # Datos del controlador de volumen
+    globalEqDictionary = {}                                         # Datos del Eq global
+    EXPAssignList = []                                              # Designador de parametro controlado por el pedal de expresión
+    chainList = []                                                  # Lista con registros y numero de datos del orden de la cadena de efectos
 
 
-    # Revisables:
-    pedalFXDictionary = {}                                                              # Tipo de pedalFX (Wah, pitch Bend): lista con pares de dirección y numero de datos que le corresponden al efecto
-    boostDictionary = {}                                                                # Tipo de boost: lista con pares de dirección y numero de datos que le corresponden al efecto
-    ampDictionary = {}                                                                  # Tipo de amp: lista con pares de dirección y numero de datos que le corresponden al efecto
-    eqDictionary = {}                                                                   # Tipo de Eq: lista con pares de dirección y numero de parametros que le corresponden al efecto
-    delay1Dictionary = {}                                                               # Tipo de Delay1: lista con pares de dirección y numero de parametros que le corresponden al efecto
-    delay2Dictionary = {}                                                               # Tipo de Delay2: lista con pares de dirección y numero de parametros que le corresponden al efecto
-    reverbDictionary = {}                                                               # Tipo de Reverb: lista con pares de dirección y numero de parametros que le corresponden al efecto
-    FXDictionary = {}                                                                   # Tipo de FX: lista con pares de dirección y numero de parametros que le corresponden al efecto
-    MODDictionary = {}                                                                  # Tipo de MOD: lista con pares de dirección y numero de parametros que le corresponden al efecto
-    EXPAssignDictionary = {}                                                            # Parametros de cada tipo de asignación del pedal de expresión, agrupados en un diccionario, para cada tipo de asignación
+    # Opcionales:
+    pedalFXDictionary = {}                                                      # Tipo de pedalFX (Wah, pitch Bend): lista con pares de dirección y numero de datos que le corresponden al efecto
+    boostDictionary = {}                                                        # Tipo de boost: lista con pares de dirección y numero de datos que le corresponden al efecto
+    ampDictionary = {}                                                          # Tipo de amp: lista con pares de dirección y numero de datos que le corresponden al efecto
+    eqDictionary = {}                                                           # Tipo de Eq: lista con pares de dirección y numero de parametros que le corresponden al efecto
+    delay1Dictionary = {}                                                       # Tipo de Delay1: lista con pares de dirección y numero de parametros que le corresponden al efecto
+    delay2Dictionary = {}                                                       # Tipo de Delay2: lista con pares de dirección y numero de parametros que le corresponden al efecto
+    reverbDictionary = {}                                                       # Tipo de Reverb: lista con pares de dirección y numero de parametros que le corresponden al efecto
+    FXDictionary = {}                                                           # Tipo de FX: lista con pares de dirección y numero de parametros que le corresponden al efecto
+    MODDictionary = {}                                                          # Tipo de MOD: lista con pares de dirección y numero de parametros que le corresponden al efecto
+    EXPAssignDictionary = {}                                                    # Parametros de cada tipo de asignación del pedal de expresión, agrupados en un diccionario, para cada tipo de asignación
     
     # PatchData (midi SysEx messages)
     patchChain = None
     patchChainMsg = None
     patchEnableDirectory = {}                                                           # Directorio con el estado de habilitación de cada tipo de efectos de la cadena
-    voidSysExMsg =mido.Message('program_change', program=0)                             # Mensaje con la cadena del patch
+    voidSysExMsg =mido.Message("program_change", program=0)                             # Mensaje con la cadena del patch
     patchData = [None for x in range(50)]                                               # Conjunto de mensajes con el parche
     patchPedalFXType = None                                                               
     patchBoostType = None
@@ -63,35 +63,35 @@ class KTNAReader:
     def __init__(self):
         
         self.patchData = [self.voidSysExMsg for x in range(40)]  
-
+        # Dirección de 32 bits, cantidad de datos 
 
         self.chainList = [[0x60, 0x00, 0x07, 0x20], 20]                                 # Cadena de efectos
 
 
-        self.pedalEnableAddressDirectory['PedalFX'] = [[0x60, 0x00, 0x06, 0x20], 1]     # off, on, (0,1)
-        self.pedalEnableAddressDirectory['Boost'] = [[0x60, 0x00, 0x00, 0x30], 1]       # off, on, (0,1)
-        self.pedalEnableAddressDirectory['NoiseSup'] = [[0x60, 0x00, 0x06, 0x63], 1]    # off, on, (0,1)
-        self.pedalEnableAddressDirectory['Eq'] = [[0x60, 0x00, 0x01, 0x30], 1]          # off, on, (0,1)
-        self.pedalEnableAddressDirectory['Delay1'] = [[0x60, 0x00, 0x05, 0x60], 1]      # off, on, (0,1)
-        self.pedalEnableAddressDirectory['Delay2'] = [[0x60, 0x00, 0x10, 0x4E], 1]      # off, on, (0,1)
-        self.pedalEnableAddressDirectory['Reverb'] = [[0x60, 0x00, 0x06, 0x10], 1]      # off, on, (0,1)
-        self.pedalEnableAddressDirectory['GlobalEq'] = [[0x00, 0x00, 0x04, 0x32], 1]    # off, on, (0,1)
-        self.pedalEnableAddressDirectory['MOD'] = [[0x60, 0x00, 0x01, 0x40], 1]         # off, on, (0,1)
-        self.pedalEnableAddressDirectory['FX'] = [[0x60, 0x00, 0x03, 0x4C], 1]          # off, on, (0,1)
+        self.pedalEnableAddressDirectory["PedalFX"] = [[0x60, 0x00, 0x06, 0x20], 1]     # off, on, (0,1)
+        self.pedalEnableAddressDirectory["Boost"] = [[0x60, 0x00, 0x00, 0x30], 1]       # off, on, (0,1)
+        self.pedalEnableAddressDirectory["NoiseSup"] = [[0x60, 0x00, 0x06, 0x63], 1]    # off, on, (0,1)
+        self.pedalEnableAddressDirectory["Eq"] = [[0x60, 0x00, 0x01, 0x30], 1]          # off, on, (0,1)
+        self.pedalEnableAddressDirectory["Delay1"] = [[0x60, 0x00, 0x05, 0x60], 1]      # off, on, (0,1)
+        self.pedalEnableAddressDirectory["Delay2"] = [[0x60, 0x00, 0x10, 0x4E], 1]      # off, on, (0,1)
+        self.pedalEnableAddressDirectory["Reverb"] = [[0x60, 0x00, 0x06, 0x10], 1]      # off, on, (0,1)
+        self.pedalEnableAddressDirectory["GlobalEq"] = [[0x00, 0x00, 0x04, 0x32], 1]    # off, on, (0,1)
+        self.pedalEnableAddressDirectory["MOD"] = [[0x60, 0x00, 0x01, 0x40], 1]         # off, on, (0,1)
+        self.pedalEnableAddressDirectory["FX"] = [[0x60, 0x00, 0x03, 0x4C], 1]          # off, on, (0,1)
 
 
 
-        self.pedalSelectorAddressDirectory['PedalFX'] = [[0x60, 0x00, 0x11, 0x11], 1]   # Tipo de Pedal
-        self.pedalSelectorAddressDirectory['Boost'] = [[0x60, 0x00, 0x00, 0x31], 1]     # Tipo de Boost
-        self.pedalSelectorAddressDirectory['Amp'] = [[0x60, 0x00, 0x00, 0x51], 1]       # Tipo de Amp
-        self.pedalSelectorAddressDirectory['Eq'] = [[0x60, 0x00, 0x11, 0x04], 1]        # Tipo de eq
-        self.pedalSelectorAddressDirectory['Delay1'] = [[0x60, 0x00, 0x05, 0x61], 1]    # Tipo de Delay1
-        self.pedalSelectorAddressDirectory['Delay2'] = [[0x60, 0x00, 0x10, 0x4F], 1]    # Tipo de Delay1
-        self.pedalSelectorAddressDirectory['Reverb'] = [[0x60, 0x00, 0x06, 0x11], 1]    # Tipo de Reverb
-        self.pedalSelectorAddressDirectory['GlobalEq'] = [[0x00, 0x00, 0x04, 0x3E], 2]  # Tipo de GlobalEq
-        self.pedalSelectorAddressDirectory['Cab'] = [[0x00, 0x00, 0x04, 0x31], 1]       # Tipo de Cabina
-        self.pedalSelectorAddressDirectory['MOD'] = [[0x60, 0x00, 0x01, 0x41], 1]       # Tpoo de MOD
-        self.pedalSelectorAddressDirectory['FX'] = [[0x60, 0x00, 0x03, 0x4D], 1]        # Tipo de FX
+        self.pedalSelectorAddressDirectory["PedalFX"] = [[0x60, 0x00, 0x11, 0x11], 1]   # Tipo de Pedal
+        self.pedalSelectorAddressDirectory["Boost"] = [[0x60, 0x00, 0x00, 0x31], 1]     # Tipo de Boost
+        self.pedalSelectorAddressDirectory["Amp"] = [[0x60, 0x00, 0x00, 0x51], 1]       # Tipo de Amp
+        self.pedalSelectorAddressDirectory["Eq"] = [[0x60, 0x00, 0x11, 0x04], 1]        # Tipo de eq
+        self.pedalSelectorAddressDirectory["Delay1"] = [[0x60, 0x00, 0x05, 0x61], 1]    # Tipo de Delay1
+        self.pedalSelectorAddressDirectory["Delay2"] = [[0x60, 0x00, 0x10, 0x4F], 1]    # Tipo de Delay1
+        self.pedalSelectorAddressDirectory["Reverb"] = [[0x60, 0x00, 0x06, 0x11], 1]    # Tipo de Reverb
+        self.pedalSelectorAddressDirectory["GlobalEq"] = [[0x00, 0x00, 0x04, 0x3E], 2]  # Tipo de GlobalEq
+        self.pedalSelectorAddressDirectory["Cab"] = [[0x00, 0x00, 0x04, 0x31], 1]       # Tipo de Cabina
+        self.pedalSelectorAddressDirectory["MOD"] = [[0x60, 0x00, 0x01, 0x41], 1]       # Tpoo de MOD
+        self.pedalSelectorAddressDirectory["FX"] = [[0x60, 0x00, 0x03, 0x4D], 1]        # Tipo de FX
         
         
         
@@ -215,7 +215,7 @@ class KTNAReader:
         self.boostDictionary[0x10] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 16-GuV DS
         self.boostDictionary[0x11] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 17-DST+
         self.boostDictionary[0x12] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 18-Metal Zone
-        self.boostDictionary[0x13] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 19-'60s Fuzz
+        self.boostDictionary[0x13] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 19-"60s Fuzz
         self.boostDictionary[0x14] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                   # 10-Muff Fuzz
         self.boostDictionary[0x15] = [[[0x60, 0x00, 0x00, 0x32]],[13]]                  # 21-Custom
 
@@ -248,7 +248,7 @@ class KTNAReader:
         self.ampDictionary[0x19] = [[[0x60, 0x00, 0x00, 0x52],
                                      [0x60, 0x00, 0x00, 0x63]],[8,8]]                   # 25-Custom
         
-        self.noiseSupList = [[0x60, 0x00, 0x06, 0x64],2]                                # Datos del supresor
+        self.noiseSupList = [[0x60, 0x00, 0x06, 0x64],2]                                # Datos del supresor de ruido
         
         self.volumeList = [[[0x60, 0x00, 0x06, 0x33],
                             [0x60, 0x00, 0x07, 0x10]],[1,1]]                            # Datos de volumen
@@ -298,7 +298,7 @@ class KTNAReader:
 
 
         self.globalEqDictionary[0x00] = [[[0x00, 0x00, 0x04, 0x33]],[11]]               # 0x00 Eq parametrico
-        self.globalEqDictionary[0x01] = [[[0x00, 0x00, 0x04, 0x40]],[11]]               # 0x01 Eq grafico
+        self.globalEqDictionary[0x01] = [[[0x00, 0x00, 0x04, 0x40]],[11]]               # 0x01 Eq gráfico
 
 
 
@@ -371,10 +371,10 @@ class KTNAReader:
 
 
 
-    def initConnection(self, input='KATANA MIDI 1', output='KATANA MIDI 1'):
+    def initConnection(self, input="KATANA MIDI 1", output="KATANA MIDI 1"):
         try:
-            self.katanaOUT = mido.open_output(output)
-            self.katanaIN = mido.open_input(input)   
+            self.katana_out = mido.open_output(output)
+            self.katana_in = mido.open_input(input)   
             return 1
         except:
             return 0
@@ -392,9 +392,9 @@ class KTNAReader:
 
     def readData(self, address, offset):
 
-        msg = mido.Message('sysex', data=(self.initialTupleSysex + self.readDataSysex + address + offset + self.checkSum(address,offset)))
-        self.katanaOUT.send(msg)
-        msg = self.katanaIN.receive()
+        msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + offset + self.checkSum(address,offset)))
+        self.katana_out.send(msg)
+        msg = self.katana_in.receive()
         value = msg.bytes()
         value.pop()
         value.pop()
@@ -404,9 +404,9 @@ class KTNAReader:
     
     def readFullData(self, address, offset):
 
-        msg = mido.Message('sysex', data=(self.initialTupleSysex + self.readDataSysex + address + offset + self.checkSum(address,offset)))
-        self.katanaOUT.send(msg)
-        msg = self.katanaIN.receive()
+        msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + offset + self.checkSum(address,offset)))
+        self.katana_out.send(msg)
+        msg = self.katana_in.receive()
         postData = list(msg.bytes())
         postData.pop()
         postData.pop()
@@ -418,9 +418,9 @@ class KTNAReader:
 
     def readRawData(self, address, offset):
 
-        msg = mido.Message('sysex', data=(self.initialTupleSysex + self.readDataSysex + address + offset + self.checkSum(address,offset)))
-        self.katanaOUT.send(msg)
-        msg = self.katanaIN.receive()
+        msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + offset + self.checkSum(address,offset)))
+        self.katana_out.send(msg)
+        msg = self.katana_in.receive()
         value = msg.bytes()
         value.pop()
         del value[0]
@@ -429,195 +429,195 @@ class KTNAReader:
 
     def readCurrentPatchFromKatana(self):
 
-            print('Reading Patch...')
+            print("Reading Patch...")
 
             # --Cadena de efectos------------------------------------------------------
 
             self.patchChain = self.readRawData(self.chainList[0], [0x00,0x00,0x00, self.chainList[1]])
-            self.patchChain[6] = self.setDataSysex[0] 
-            self.patchChainMsg = mido.Message('sysex',data=self.patchChain)
+            self.patchChain[6] = self.set_data_sysex[0] 
+            self.patchChainMsg = mido.Message("sysex",data=self.patchChain)
    
             # --Lectura de tipos de pedales--------------------------------------------
 
             # Tipo de PedalFX
-            address = self.pedalSelectorAddressDirectory['PedalFX'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['PedalFX'][1]]
+            address = self.pedalSelectorAddressDirectory["PedalFX"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["PedalFX"][1]]
             msg = self.readFullData(address,offset)
             self.patchPedalFXType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[0] = mido.Message('sysex',data=msg[1]) 
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[0] = mido.Message("sysex",data=msg[1]) 
 
             # Tipo de Boost
-            address = self.pedalSelectorAddressDirectory['Boost'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Boost'][1]]
+            address = self.pedalSelectorAddressDirectory["Boost"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Boost"][1]]
             msg = self.readFullData(address,offset)
             self.patchBoostType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[1] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[1] = mido.Message("sysex",data=msg[1])
 
             # Tipo de Amp
-            address = self.pedalSelectorAddressDirectory['Amp'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Amp'][1]]
+            address = self.pedalSelectorAddressDirectory["Amp"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Amp"][1]]
             msg = self.readFullData(address,offset)
             self.patchAmpType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[2] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[2] = mido.Message("sysex",data=msg[1])
 
             # Tipo de Eq
-            address = self.pedalSelectorAddressDirectory['Eq'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Eq'][1]]
+            address = self.pedalSelectorAddressDirectory["Eq"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Eq"][1]]
             msg = self.readFullData(address,offset)
             self.patchEqType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[3] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[3] = mido.Message("sysex",data=msg[1])
 
             # Tipo de Delay1
-            address = self.pedalSelectorAddressDirectory['Delay1'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Delay1'][1]]
+            address = self.pedalSelectorAddressDirectory["Delay1"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Delay1"][1]]
             msg = self.readFullData(address,offset)
             self.patchDelay1Type = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[4] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[4] = mido.Message("sysex",data=msg[1])
     
             # Tipo de Delay2
-            address = self.pedalSelectorAddressDirectory['Delay2'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Delay2'][1]]
+            address = self.pedalSelectorAddressDirectory["Delay2"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Delay2"][1]]
             msg = self.readFullData(address,offset)
             self.patchDelay2Type = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[5] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[5] = mido.Message("sysex",data=msg[1])
 
             # Tipo de Reverb
-            address = self.pedalSelectorAddressDirectory['Reverb'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Reverb'][1]]
+            address = self.pedalSelectorAddressDirectory["Reverb"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Reverb"][1]]
             msg = self.readFullData(address,offset)
             self.patchReverbType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[6] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[6] = mido.Message("sysex",data=msg[1])
 
             # Tipo de GlobalEq
-            address = self.pedalSelectorAddressDirectory['GlobalEq'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['GlobalEq'][1]]
+            address = self.pedalSelectorAddressDirectory["GlobalEq"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["GlobalEq"][1]]
             msg = self.readFullData(address,offset)
             self.patchGlobalEqType = msg[0][1]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[7] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[7] = mido.Message("sysex",data=msg[1])
 
             # Tipo de Cab
-            address = self.pedalSelectorAddressDirectory['Cab'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['Cab'][1]]
+            address = self.pedalSelectorAddressDirectory["Cab"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["Cab"][1]]
             msg = self.readRawData(address,offset)
-            msg[6] = self.setDataSysex[0]
-            self.patchData[8] = mido.Message('sysex',data=msg)
+            msg[6] = self.set_data_sysex[0]
+            self.patchData[8] = mido.Message("sysex",data=msg)
 
             # Tipo de MOD
-            address = self.pedalSelectorAddressDirectory['MOD'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['MOD'][1]]
+            address = self.pedalSelectorAddressDirectory["MOD"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["MOD"][1]]
             msg = self.readFullData(address,offset)
             self.patchMODType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[9] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[9] = mido.Message("sysex",data=msg[1])
 
             # Tipo de FX
-            address = self.pedalSelectorAddressDirectory['FX'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory['FX'][1]]
+            address = self.pedalSelectorAddressDirectory["FX"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalSelectorAddressDirectory["FX"][1]]
             msg = self.readFullData(address,offset)
             self.patchFXType = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[10] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[10] = mido.Message("sysex",data=msg[1])
 
             
             # --Estado de efectos------------------------------------------------------
 
             # Enable PedalFX
-            address = self.pedalEnableAddressDirectory['PedalFX'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['PedalFX'][1]]
+            address = self.pedalEnableAddressDirectory["PedalFX"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["PedalFX"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['PedalFX'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[11] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["PedalFX"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[11] = mido.Message("sysex",data=msg[1])
             
             # Enable Boost
-            address = self.pedalEnableAddressDirectory['Boost'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['Boost'][1]]
+            address = self.pedalEnableAddressDirectory["Boost"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["Boost"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['Boost'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[12] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["Boost"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[12] = mido.Message("sysex",data=msg[1])
             
             # Enable NoiseSup
-            address = self.pedalEnableAddressDirectory['NoiseSup'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['NoiseSup'][1]]
+            address = self.pedalEnableAddressDirectory["NoiseSup"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["NoiseSup"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['NoiseSup'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[13] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["NoiseSup"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[13] = mido.Message("sysex",data=msg[1])
 
             # Enable Eq
-            address = self.pedalEnableAddressDirectory['Eq'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['Eq'][1]]
+            address = self.pedalEnableAddressDirectory["Eq"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["Eq"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['Eq'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[14] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["Eq"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[14] = mido.Message("sysex",data=msg[1])
 
             # Enable Delay1
-            address = self.pedalEnableAddressDirectory['Delay1'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['Delay1'][1]]
+            address = self.pedalEnableAddressDirectory["Delay1"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["Delay1"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['Delay1'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[15] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["Delay1"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[15] = mido.Message("sysex",data=msg[1])
 
             # Enable Delay2
-            address = self.pedalEnableAddressDirectory['Delay2'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['Delay2'][1]]
+            address = self.pedalEnableAddressDirectory["Delay2"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["Delay2"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['Delay2'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[16] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["Delay2"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[16] = mido.Message("sysex",data=msg[1])
 
             # Enable Reverb
-            address = self.pedalEnableAddressDirectory['Reverb'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['Reverb'][1]]
+            address = self.pedalEnableAddressDirectory["Reverb"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["Reverb"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['Reverb'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[17] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["Reverb"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[17] = mido.Message("sysex",data=msg[1])
 
             # Enable GlobalEq
-            address = self.pedalEnableAddressDirectory['GlobalEq'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['GlobalEq'][1]]
+            address = self.pedalEnableAddressDirectory["GlobalEq"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["GlobalEq"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['GlobalEq'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[18] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["GlobalEq"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[18] = mido.Message("sysex",data=msg[1])
 
             # Enable MOD
-            address = self.pedalEnableAddressDirectory['MOD'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['MOD'][1]]
+            address = self.pedalEnableAddressDirectory["MOD"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["MOD"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['MOD'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[19] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["MOD"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[19] = mido.Message("sysex",data=msg[1])
 
             # Enable FX
-            address = self.pedalEnableAddressDirectory['FX'][0]
-            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory['FX'][1]]
+            address = self.pedalEnableAddressDirectory["FX"][0]
+            offset = [0x00, 0x00, 0x00, self.pedalEnableAddressDirectory["FX"][1]]
             msg = self.readFullData(address,offset)
-            self.patchEnableDirectory['FX'] = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[20] = mido.Message('sysex',data=msg[1])
+            self.patchEnableDirectory["FX"] = msg[0][0]
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[20] = mido.Message("sysex",data=msg[1])
             
 
-            # --Asignacion de EXP------------------------------------------------------            
+            # --Asignación de EXP------------------------------------------------------            
 
             address = self.EXPAssignList[0]
             offset = [0x00, 0x00, 0x00, self.EXPAssignList[1][0]]
             msg = self.readFullData(address,offset)
             expAssign = msg[0][0]
-            msg[1][6] = self.setDataSysex[0]
-            self.patchData[21] = mido.Message('sysex',data=msg[1])
+            msg[1][6] = self.set_data_sysex[0]
+            self.patchData[21] = mido.Message("sysex",data=msg[1])
 
             self.index = 22
             if expAssign >2 and expAssign <9:
@@ -632,8 +632,8 @@ class KTNAReader:
                 msg = [self.readRawData(address[x],offset[x]) for x in range (len(address)) ] 
                 
                 for i in range(len(msg)):
-                    msg[i][6] = self.setDataSysex[0]
-                    self.patchData[self.index] = mido.Message('sysex',data=msg[i])
+                    msg[i][6] = self.set_data_sysex[0]
+                    self.patchData[self.index] = mido.Message("sysex",data=msg[i])
                     self.index += 1
 
             # --PedalFX Type-----------------------------------------------------------
@@ -643,8 +643,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             
@@ -655,8 +655,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
             
             # --Amp Type---------------------------------------------------------------
@@ -666,8 +666,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --noiseSup---------------------------------------------------------------
@@ -675,19 +675,19 @@ class KTNAReader:
             address = self.noiseSupList[0]
             offset = [0x00, 0x00, 0x00, self.noiseSupList[1]]
             msg = self.readRawData(address,offset)
-            msg[6] = self.setDataSysex[0]
-            self.patchData[self.index] = mido.Message('sysex',data=msg)
+            msg[6] = self.set_data_sysex[0]
+            self.patchData[self.index] = mido.Message("sysex",data=msg)
             self.index += 1
 
-            # --volume-----------------------------------------------------------------
+            # --Volume-----------------------------------------------------------------
            
             address = self.volumeList[0]
             offset = [[0x00, 0x00, 0x00, self.volumeList[1][x]] for x in range(len(self.volumeList[1]))]
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --Eq Type----------------------------------------------------------------
@@ -697,8 +697,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --Delay1 Type------------------------------------------------------------
@@ -708,8 +708,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --Delay2 Type------------------------------------------------------------
@@ -719,8 +719,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --Reverb Type------------------------------------------------------------
@@ -730,8 +730,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --globalEq Type----------------------------------------------------------
@@ -741,8 +741,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --Mod Type---------------------------------------------------------------
@@ -752,8 +752,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
 
@@ -762,8 +762,8 @@ class KTNAReader:
             
             for i in range(len(address)):
                 msg = self.readRawData(address[i],offset[i])
-                msg[6] = self.setDataSysex[0]
-                self.patchData[self.index] = mido.Message('sysex',data=msg)
+                msg[6] = self.set_data_sysex[0]
+                self.patchData[self.index] = mido.Message("sysex",data=msg)
                 self.index += 1
 
             # --END--------------------------------------------------------------------
@@ -771,73 +771,78 @@ class KTNAReader:
 
 
             
-            print('Patch Reading complete')
+            print("Patch Reading complete")
 
     
     def saveToTempData(self):
         
-        mido.write_syx_file('tempPatch.syx', self.patchData)
-        mido.write_syx_file('tempChain.syx', [self.patchChainMsg])
+        mido.write_syx_file("tempPatch.syx", self.patchData)
+        mido.write_syx_file("tempChain.syx", [self.patchChainMsg])
         
         print(self.patchEnableDirectory)
 
-        with open('tempPatchEnableDirectory.csv', 'w') as f:
+        with open("tempPatchEnableDirectory.csv", "w") as f:
             for key in self.patchEnableDirectory.keys():
                 f.write("%s,%s\n"%(key,self.patchEnableDirectory[key]))
 
 
 
 #    def readCurrentData(self):
-#        self.groupNames = os.listdir(self.currentDirectory + '/GroupPresets')
+#        self.groupNames = os.listdir(self.current_directory + "/GroupPresets")
 #        
-#        #currentDirectory 
+#        #current_directory 
 #
 #    def newGroup(self):
-#        print('TODO')
+#        print("TODO")
 #    
 #    def newBank(self):
-#        print('TODO')
+#        print("TODO")
 #
 #    def newChian(self):
-#        print('TODO')
+#        print("TODO")
 #    
 #    def newPatch(self):
-#        print('TODO')
+#        print("TODO")
+
+
+def main():
+
+    katana_reader=KatanaReader()
+ 
+    # Iniciar conexión con el katana
+    connectionState = "Unplugged"
+
+    while connectionState =="Unplugged":
+
+        # Linux
+        # x = katana_reader.initConnection(input="KATANA 0", output="KATANA 1")    
+        # Windows
+        x = katana_reader.initConnection(input="KATANA MIDI 1", output="KATANA MIDI 1")                  
+        
+        if x == 1:
+            connectionState = "plugged"
+        else:
+            print("NO se encuentra KATANA")
+            time.sleep(5)
+    
+    katana_reader.readCurrentPatchFromKatana()
+    katana_reader.saveToTempData()
+    
+    # Lectura de prueba
+    #katana_reader.readCurrentPatchFromKatana()
+    #value = katana_reader.readData([0x60,0x00,0x12,0x1F],[0x00,0x00,0x00,0x01])
+    #print(value)
+    # Escritura de prueba
+    # msg = mido.Message("program_change", program=4)
+    # x = input("Cambie el parche actual  y presione Enter")
+    # katana_reader.katana_out.send(msg)
+    # for x in katana_reader.patchData:        
+       # katana_reader.katana_out.send(x)
+
 
 
 if __name__ == "__main__":
-
-    ktnaReader=KTNAReader()
- 
-    # Iniciar conexión con el katana
-    connectionState = 'Unplugged'
-
-    while connectionState =='Unplugged':
-
-        x=ktnaReader.initConnection(input='KATANA 0', output='KATANA 1')
-        if x==1:
-            connectionState = 'plugged'
-        else:
-            print('NO se encuentra KATANA')
-            time.sleep(5)
-    
-    ktnaReader.readCurrentPatchFromKatana()
-    ktnaReader.saveToTempData()
-    
-    # Lectura de prueba
-    #ktnaReader.readCurrentPatchFromKatana()
-    #value = ktnaReader.readData([0x60,0x00,0x12,0x1F],[0x00,0x00,0x00,0x01])
-    #print(value)
-    # Escritura de prueba
-    # msg = mido.Message('program_change', program=4)
-    # x = input('Cambie el parche actual  y presione Enter')
-    # ktnaReader.katanaOUT.send(msg)
-    # for x in ktnaReader.patchData:        
-       # ktnaReader.katanaOUT.send(x)
-
-
-
-
+    main()
 
         
         
