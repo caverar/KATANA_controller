@@ -70,8 +70,7 @@ class KatanaReader:
     patch_mod_type = None
     patch_global_eq_type = None
   
-    # Current Data    
-
+    # Current Data 
     
     
     def __init__(self) -> None:
@@ -81,7 +80,6 @@ class KatanaReader:
         # Dirección de 32 bits, cantidad de datos
 
         self.chain_list = [[0x60, 0x00, 0x07, 0x20], 20]                                    # Cadena de efectos
-
 
         self.pedal_enable_address_directory["PedalFX"] = [[0x60, 0x00, 0x06, 0x20], 1]      # off, on, (0,1)
         self.pedal_enable_address_directory["Boost"] = [[0x60, 0x00, 0x00, 0x30], 1]        # off, on, (0,1)
@@ -94,8 +92,6 @@ class KatanaReader:
         self.pedal_enable_address_directory["MOD"] = [[0x60, 0x00, 0x01, 0x40], 1]          # off, on, (0,1)
         self.pedal_enable_address_directory["FX"] = [[0x60, 0x00, 0x03, 0x4C], 1]           # off, on, (0,1)
 
-
-
         self.pedal_selector_address_directory["PedalFX"] = [[0x60, 0x00, 0x11, 0x11], 1]    # Tipo de Pedal
         self.pedal_selector_address_directory["Boost"] = [[0x60, 0x00, 0x00, 0x31], 1]      # Tipo de Boost
         self.pedal_selector_address_directory["Amp"] = [[0x60, 0x00, 0x00, 0x51], 1]        # Tipo de Amp
@@ -107,11 +103,9 @@ class KatanaReader:
         self.pedal_selector_address_directory["Cab"] = [[0x00, 0x00, 0x04, 0x31], 1]        # Tipo de Cabina
         self.pedal_selector_address_directory["MOD"] = [[0x60, 0x00, 0x01, 0x41], 1]        # Tipo de MOD
         self.pedal_selector_address_directory["FX"] = [[0x60, 0x00, 0x03, 0x4D], 1]         # Tipo de FX
-        
-        
-        
-
-        self.exp_assign_list = [[0x60, 0x00, 0x12, 0x1F],[1]]                               # Retorna el parametro que se puede controlar mediante el pedal de expresión
+              
+        # Retorna el parametro que se puede controlar mediante el pedal de expresión
+        self.exp_assign_list = [[0x60, 0x00, 0x12, 0x1F],[1]]                               
                 
                 # 0x00 : Volume --
                 # 0x01 : Foot Volume --
@@ -128,8 +122,6 @@ class KatanaReader:
         self.exp_assign_dictionary = [{} for x in range (9)]
         self.exp_assign_dictionary[0x03][0x00] = [[[0x60, 0x00, 0x13, 0x00],
                                                    [0x60, 0x00, 0x13, 0x20]],[1,2]]     # 0x03: Parametros de asignación de Booster
-        
-        
 
         self.exp_assign_dictionary[0x05][0x00] = [[[0x60, 0x00, 0x13, 0x01],
                                                    [0x60, 0x00, 0x13, 0x22]],[1,4]]     # 0x05: Parametros de asignación de Delay 1
@@ -137,10 +129,8 @@ class KatanaReader:
                                                    [0x60, 0x00, 0x13, 0x22]],[1,4]]     # 0x07: Parametros de asignación de Delay 2
         self.exp_assign_dictionary[0x08][0x00] = [[[0x60, 0x00, 0x13, 0x02],
                                                    [0x60, 0x00, 0x13, 0x26]],[1,4]]     # 0x08: Parametros de asignación de Reverb
-
         
         # 0x04: Asignación para cada una las 30 modulaciones
-
         
         self.exp_assign_dictionary[0x04][0x00] = [[[0x60, 0x00, 0x13, 0x0F],
                                                    [0x60, 0x00, 0x13, 0x42]],[1,2]]     # 0x00 T Wah        
@@ -202,10 +192,7 @@ class KatanaReader:
                                                    [0x60, 0x00, 0x13, 0x66]],[1,4]]     # 0x26 DC30
         self.exp_assign_dictionary[0x04][0x27] = [[[0x60, 0x00, 0x13, 0x6A]],[3]]       # 0x27 Heavy Octave
                                         
-
         self.exp_assign_dictionary[0x06] = self.exp_assign_dictionary[0x04]             # 0x06: Asignación para cada uno los 30 FX post
-
-
         
         self.exp_pedal_dictionary[0x00] = [[[0x60, 0x00, 0x06, 0x26]],[6]]              # 00-WAH
         self.exp_pedal_dictionary[0x01] = [[[0x60, 0x00, 0x06, 0x22]],[4]]              # 01-Pedal Bend
@@ -233,7 +220,6 @@ class KatanaReader:
         self.boost_dictionary[0x13] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                  # 19-"60s Fuzz
         self.boost_dictionary[0x14] = [[[0x60, 0x00, 0x00, 0x32]],[7]]                  # 10-Muff Fuzz
         self.boost_dictionary[0x15] = [[[0x60, 0x00, 0x00, 0x32]],[13]]                 # 21-Custom
-
 
         self.amp_dictionary[0x00] = [[[0x60, 0x00, 0x00, 0x52]],[8]]                    # 00-Natural Clean
         self.amp_dictionary[0x01] = [[[0x60, 0x00, 0x00, 0x52]],[8]]                    # 01-[Acoustic] Full Range
@@ -269,8 +255,7 @@ class KatanaReader:
                              [0x60, 0x00, 0x07, 0x10]],[1,1]]                           # Datos de volumen
                 
         self.eq_dictionary[0x00] = [[[0x60, 0x00, 0x01, 0x31]],[11]]                    # 0x00: Eq Parametric
-        self.eq_dictionary[0x01] = [[[0x60, 0x00, 0x11, 0x05]],[11]]                    # 0x00: Eq Graphic
-        
+        self.eq_dictionary[0x01] = [[[0x60, 0x00, 0x11, 0x05]],[11]]                    # 0x00: Eq Graphic        
 
         self.delay1_dictionary[0x00] = [[[0x60, 0x00, 0x05, 0x62]],[6]]                  # 0x00 Digital
         self.delay1_dictionary[0x01] = [[[0x60, 0x00, 0x05, 0x62]],[11]]                 # 0x01 Pan        
@@ -285,8 +270,7 @@ class KatanaReader:
                                          [0x60, 0x00, 0x05, 0x73]],[6,2]]                # 0x09 Modulate
         self.delay1_dictionary[0x0A] = [[[0x60, 0x00, 0x05, 0x62],
                                          [0x60, 0x00, 0x05, 0x73],
-                                         [0x60, 0x00, 0x10, 0x49]],[6,2,5]]              # 0x0A SDE-3000
-        
+                                         [0x60, 0x00, 0x10, 0x49]],[6,2,5]]              # 0x0A SDE-3000        
         
         self.delay2_dictionary[0x00] = [[[0x60, 0x00, 0x10, 0x50]],[6]]                  # 0x00 Digital
         self.delay2_dictionary[0x01] = [[[0x60, 0x00, 0x10, 0x50]],[11]]                 # 0x01 Pan        
@@ -302,7 +286,6 @@ class KatanaReader:
         self.delay2_dictionary[0x0A] = [[[0x60, 0x00, 0x10, 0x50],
                                          [0x60, 0x00, 0x10, 0x61],],[6,7]]               # 0x0A SDE-3000
 
-
         self.reverb_dictionary[0x00] = [[[0x60, 0x00, 0x06, 0x12]],[8]]                  # 0x00 Ambiance
         self.reverb_dictionary[0x01] = [[[0x60, 0x00, 0x06, 0x12]],[8]]                  # 0x01 Room
         self.reverb_dictionary[0x02] = [[[0x60, 0x00, 0x06, 0x12]],[8]]                  # 0x02 Hall 1
@@ -311,12 +294,8 @@ class KatanaReader:
         self.reverb_dictionary[0x05] = [[[0x60, 0x00, 0x06, 0x12]],[9]]                  # 0x05 Spring
         self.reverb_dictionary[0x06] = [[[0x60, 0x00, 0x06, 0x12]],[8]]                  # 0x06 Modulate
 
-
         self.global_eq_dictionary[0x00] = [[[0x00, 0x00, 0x04, 0x33]],[11]]             # 0x00 Eq parametrico
         self.global_eq_dictionary[0x01] = [[[0x00, 0x00, 0x04, 0x40]],[11]]             # 0x01 Eq gráfico
-
-
-
 
         self.mod_dictionary[0x00] = [[[0x60, 0x00, 0x01, 0x4C]],[7]]                     # 0x00 T Wah
         self.mod_dictionary[0x01] = [[[0x60, 0x00, 0x01, 0x54]],[7]]                     # 0x01 Auto Wah  
@@ -349,8 +328,6 @@ class KatanaReader:
         self.mod_dictionary[0x25] = [[[0x60, 0x00, 0x10, 0x68]],[5]]                     # 0x25 WAH 95E
         self.mod_dictionary[0x26] = [[[0x60, 0x00, 0x10, 0x6D]],[9]]                     # 0x26 DC30
         self.mod_dictionary[0x27] = [[[0x60, 0x00, 0x11, 0x17]],[3]]                     # 0x27 Heavy Octave
-
-
 
         self.fx_dictionary[0x00] = [[[0x60, 0x00, 0x03, 0x58]],[7]]                     # 0x00 T Wah           
         self.fx_dictionary[0x01] = [[[0x60, 0x00, 0x03, 0x60]],[7]]                     # 0x01 Auto Wah              
@@ -385,7 +362,6 @@ class KatanaReader:
         self.fx_dictionary[0x27] = [[[0x60, 0x00, 0x11, 0x1A]],[3]]                     # 0x27 Heavy Octave
 
 
-
     def init_connection(self, input: str = "KATANA MIDI 1", output: str = "KATANA MIDI 1") -> int:
         try:
             self.katana_out = mido.open_output(output)
@@ -393,7 +369,7 @@ class KatanaReader:
             return 1
         except:
             return 0
-    
+
 
     def checksum(self, address: list, data: list) -> list:
         values = address + data
@@ -402,7 +378,6 @@ class KatanaReader:
             accumulator = (accumulator + value) & 0x7F
             checksum = (128 - accumulator) & 0x7F
         return [checksum]
-
 
 
     def read_data(self, address: list, offset: list) -> list:
@@ -415,7 +390,7 @@ class KatanaReader:
         value.pop()
         value.pop()
         del value[0:12]
-        return value   
+        return value
 
     
     def read_full_data(self, address: list, offset: list) -> list:
@@ -431,7 +406,8 @@ class KatanaReader:
         raw_data = list(msg.bytes())
         raw_data.pop()
         del raw_data[0]
-        return [headerless_data,raw_data] 
+        return [headerless_data,raw_data]
+
 
     def read_raw_data(self, address: list, offset: list) -> list:
 
@@ -795,15 +771,11 @@ class KatanaReader:
                 self.patch_data[self.index] = mido.Message("sysex", data = msg)
                 self.index += 1
 
-            # --END--------------------------------------------------------------------
-
-
-
-            
+            # --END--------------------------------------------------------------------            
             print("Patch Reading complete")
-
+            
     
-    def saveToTempData(self) -> None:
+    def save_to_temp_data(self) -> None:
         
         mido.write_syx_file("tempPatch.syx", self.patch_data)
         mido.write_syx_file("tempChain.syx", [self.patch_chain_message])
@@ -855,7 +827,7 @@ def main():
             time.sleep(5)
     
     katana_reader.read_current_patch_from_katana()
-    katana_reader.saveToTempData()
+    katana_reader.save_to_temp_data()
     
     # Lectura de prueba
     #katana_reader.read_current_patch_from_katana()

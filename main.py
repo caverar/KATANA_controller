@@ -5,8 +5,8 @@ from Katana import Katana
 
 # Parametros iniciales
 
-maxVolume=0x64
-minVolume=0x32
+max_volume=0x64
+min_volume=0x32
 
 def start1():
     
@@ -25,11 +25,11 @@ def start1():
     katana=Katana()
     
     # Iniciar conexión con el katana
-    connectionState = "Unplugged"    
-    while connectionState=="Unplugged":        
+    connection_state = "Unplugged"    
+    while connection_state=="Unplugged":        
         x=katana.initConnection()
         if x==1:
-            connectionState = "plugged"
+            connection_state = "plugged"
         else:
             print("NO se encuentra KATANA")
             time.sleep(5)

@@ -1,0 +1,10 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": ["--generated-members=get_input_names,open_input"],
+    "python.pythonPath": "/usr/bin/python3",
+    "cSpell.words": [
+        "Sysex"
+    ]
+    
+}
