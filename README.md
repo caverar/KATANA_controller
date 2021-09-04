@@ -13,7 +13,12 @@ pip install mido
 pip install python-rtmidi
 ```
 
-listar dispositivos midi: 
+### Listar dispositivos midi en linux: 
 ```
 amidi -l
+
+```
+### Listar dispositivos midi en Python: 
+```
+mido.get_output_names()
 ```

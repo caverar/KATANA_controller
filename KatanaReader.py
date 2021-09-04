@@ -4,6 +4,10 @@ import csv
 import mido
 
 class KatanaReader:
+    '''
+    Esta clase es utilizada para la lectura del preset actual, almacenado de forma
+    temporal, en el amplificador Boss Katana
+    '''
 
     # Objetos de conexión
 
@@ -100,7 +104,7 @@ class KatanaReader:
         self.pedal_selector_address_directory["Delay2"] = [[0x60, 0x00, 0x10, 0x4F], 1]     # Tipo de Delay1
         self.pedal_selector_address_directory["Reverb"] = [[0x60, 0x00, 0x06, 0x11], 1]     # Tipo de Reverb
         self.pedal_selector_address_directory["GlobalEq"] = [[0x00, 0x00, 0x04, 0x3E], 2]   # Tipo de GlobalEq
-        self.pedal_selector_address_directory["Cab"] = [[0x00, 0x00, 0x04, 0x31], 1]        # Tipo de Cabina
+        self.pedal_selector_address_directory["Cab"] = [[0x00, 0x00, 0x04, 0x31], 2]        # Tipo de Cabina
         self.pedal_selector_address_directory["MOD"] = [[0x60, 0x00, 0x01, 0x41], 1]        # Tipo de MOD
         self.pedal_selector_address_directory["FX"] = [[0x60, 0x00, 0x03, 0x4D], 1]         # Tipo de FX
               
@@ -362,16 +366,49 @@ class KatanaReader:
         self.fx_dictionary[0x27] = [[[0x60, 0x00, 0x11, 0x1A]],[3]]                     # 0x27 Heavy Octave
 
 
-    def init_connection(self, input: str = "KATANA MIDI 1", output: str = "KATANA MIDI 1") -> int:
+    def init_connection(self, input: str = "KATANA MIDI 1", output: str = "KATANA MIDI 1") -> bool:
+
+        """Método para iniciar conexión MIDI con el amplificador Katana.
+        
+        Parameters
+        ----------
+        input : str, optional
+            Nombre del canal MIDI de entrada.
+        output : str, optional
+            Nombre del canal MIDI de salida.
+
+        Returns
+        -------
+        bool
+            Un booleano que determina si la conexión fue exitosa.        
+        """
         try:
             self.katana_out = mido.open_output(output)
             self.katana_in = mido.open_input(input)   
-            return 1
+            return True
         except:
-            return 0
+            print("Error")
+            return False
 
 
     def checksum(self, address: list, data: list) -> list:
+
+        """Método para calcular el checksum, utilizado al final de cada trama de 
+        comandos SysEx.
+        
+        Parameters
+        ----------
+        address : list
+            Arreglo de 4 bytes, con la dirección del registro que se va a modificar.
+        data : list
+            Arreglo con el listado de bytes que se escriben en la dirección dada.
+            
+        Returns
+        -------
+        list
+            byte de checksum.        
+        """
+
         values = address + data
         accumulator = 0
         for value in values:
@@ -382,46 +419,135 @@ class KatanaReader:
 
     def read_data(self, address: list, offset: list) -> list:
 
-        msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + 
-                            offset + self.checksum(address,offset)))
-        self.katana_out.send(msg)
-        msg = self.katana_in.receive()
-        value = msg.bytes()
-        value.pop()
-        value.pop()
-        del value[0:12]
-        return value
+        """Método para leer datos SysEx del canal MIDI, eliminando su cabecera.
+        
+        Parameters
+        ----------
+        address : list
+            Arreglo de 4 bytes, con la dirección del registro que se va a leer.
+        data : list
+            Numero de datos a leer, escrito en un arreglo de 4 bytes, 
+            equivalente a un numero entero de 32 bits.
+            
+        Returns
+        -------
+        list
+            Listado de bytes que se leen en la dirección dada, 
+            quitando los encabezados para su analisis.        
+        """
+
+        try:
+
+            msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + 
+                                offset + self.checksum(address,offset)))
+            self.katana_out.send(msg)
+            msg = self.katana_in.receive()
+            value = msg.bytes()
+            value.pop()
+            value.pop()
+            del value[0:12]
+            return value
+
+        except:
+            print("Error")
+            return None
 
     
     def read_full_data(self, address: list, offset: list) -> list:
 
-        msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + 
-                            offset + self.checksum(address,offset)))
-        self.katana_out.send(msg)
-        msg = self.katana_in.receive()
-        headerless_data = list(msg.bytes())
-        headerless_data.pop()
-        headerless_data.pop()
-        del headerless_data[0:12]
-        raw_data = list(msg.bytes())
-        raw_data.pop()
-        del raw_data[0]
-        return [headerless_data,raw_data]
+        
+        """Método para leer datos SysEx del canal MIDI, incluyendo los datos 
+        crudos, y los datos sin cavecera.
+        
+        Parameters
+        ----------
+        address : list
+            Arreglo de 4 bytes, con la dirección del registro que se va a leer.
+        data : list
+            Numero de datos a leer, escrito en un arreglo de 4 bytes, 
+            equivalente a un numero entero de 32 bits.
+            
+        Returns
+        -------
+        list
+            Contiene en la primera posición, una lista con la lista de bytes leidos, 
+            sin cabecera, y en la segunda posición, un lista con los bytes originales 
+            de la lectura.
+        
+        """
+        try:
+
+            msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + 
+                                offset + self.checksum(address,offset)))
+            #print("OUTMSG: "+str(msg))
+            self.katana_out.send(msg)
+            msg = self.katana_in.receive()
+            #print("INMSG: "+str(msg))
+            headerless_data = list(msg.bytes())
+            headerless_data.pop()
+            headerless_data.pop()
+
+            del headerless_data[0:12]
+            
+            raw_data = list(msg.bytes())
+            raw_data.pop()
+            del raw_data[0]
+            return [headerless_data,raw_data]
+
+        except:
+            print("Error")
+            return None
 
 
     def read_raw_data(self, address: list, offset: list) -> list:
 
-        msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + 
-                            offset + self.checksum(address,offset)))
-        self.katana_out.send(msg)
-        msg = self.katana_in.receive()
-        value = msg.bytes()
-        value.pop()
-        del value[0]
-        return value       
+        """Método para leer datos SysEx del canal MIDI, conservandolos tal y como se leyeron.
+        
+        Parameters
+        ----------
+        address : list
+            Arreglo de 4 bytes, con la dirección del registro que se va a leer.
+        data : list
+            Numero de datos a leer, escrito en un arreglo de 4 bytes, 
+            equivalente a un numero entero de 32 bits.
+            
+        Returns
+        -------
+        list
+            Listado de bytes que se leen en la dirección dada.      
+        """
+
+        try:
+
+            msg = mido.Message("sysex", data=(self.initial_tuple_sysex + self.read_data_sysex + address + 
+                                offset + self.checksum(address,offset)))
+            #print("OUTMSG: "+str(msg))
+            self.katana_out.send(msg)
+            msg = self.katana_in.receive()
+            #print("INMSG: "+str(msg))
+            value = msg.bytes()
+            value.pop()
+            del value[0]
+            return value
+        
+        except:
+            print("Error")
+            return None       
 
 
-    def read_current_patch_from_katana(self) -> None:
+    def read_current_patch_from_katana(self) -> bool:
+
+        """Método para leer todos los datos del patch que se encuentra funcionando 
+        en el amplificador.
+
+        Returns
+        -------
+        bool
+            Un booleano que determina si la lectura fue exitosa.        
+        """
+
+            
+        try:
 
             print("Reading Patch...")
 
@@ -433,6 +559,7 @@ class KatanaReader:
    
             # --Lectura de tipos de pedales--------------------------------------------
 
+
             # Tipo de Exp Pedal
             address = self.pedal_selector_address_directory["PedalFX"][0]
             offset = [0x00, 0x00, 0x00, self.pedal_selector_address_directory["PedalFX"][1]]
@@ -440,7 +567,7 @@ class KatanaReader:
             self.patch_exp_pedal_type = msg[0][0]
             msg[1][6] = self.set_data_sysex[0]
             self.patch_data[0] = mido.Message("sysex", data = msg[1]) 
-
+            
             # Tipo de Boost
             address = self.pedal_selector_address_directory["Boost"][0]
             offset = [0x00, 0x00, 0x00, self.pedal_selector_address_directory["Boost"][1]]
@@ -448,7 +575,7 @@ class KatanaReader:
             self.patch_boost_type = msg[0][0]
             msg[1][6] = self.set_data_sysex[0]
             self.patch_data[1] = mido.Message("sysex", data = msg[1])
-
+            
             # Tipo de Amp
             address = self.pedal_selector_address_directory["Amp"][0]
             offset = [0x00, 0x00, 0x00, self.pedal_selector_address_directory["Amp"][1]]
@@ -488,22 +615,25 @@ class KatanaReader:
             self.patch_reverb_type = msg[0][0]
             msg[1][6] = self.set_data_sysex[0]
             self.patch_data[6] = mido.Message("sysex", data = msg[1])
-
+            
             # Tipo de GlobalEq
+
             address = self.pedal_selector_address_directory["GlobalEq"][0]
             offset = [0x00, 0x00, 0x00, self.pedal_selector_address_directory["GlobalEq"][1]]
+
             msg = self.read_full_data(address,offset)
             self.patch_global_eq_type = msg[0][1]
             msg[1][6] = self.set_data_sysex[0]
             self.patch_data[7] = mido.Message("sysex", data = msg[1])
 
+
             # Tipo de Cab
             address = self.pedal_selector_address_directory["Cab"][0]
             offset = [0x00, 0x00, 0x00, self.pedal_selector_address_directory["Cab"][1]]
-            msg = self.read_full_data(address,offset)
-            msg[6] = self.set_data_sysex[0]
-            self.patch_data[8] = mido.Message("sysex", data = msg)
-
+            msg = self.read_full_data(address,offset)            
+            msg[1][6] = self.set_data_sysex[0]
+            self.patch_data[8] = mido.Message("sysex", data = msg[1])
+            
             # Tipo de MOD
             address = self.pedal_selector_address_directory["MOD"][0]
             offset = [0x00, 0x00, 0x00, self.pedal_selector_address_directory["MOD"][1]]
@@ -667,7 +797,7 @@ class KatanaReader:
                 msg[6] = self.set_data_sysex[0]
                 self.patch_data[self.index] = mido.Message("sysex", data = msg)
                 self.index += 1
-
+            
             # --noiseSup---------------------------------------------------------------
 
             address = self.noise_suppressor_list[0]
@@ -699,7 +829,7 @@ class KatanaReader:
                 msg[6] = self.set_data_sysex[0]
                 self.patch_data[self.index] = mido.Message("sysex", data = msg)
                 self.index += 1
-
+            
             # --Delay1 Type------------------------------------------------------------
 
             address = self.delay1_dictionary[self.patch_delay1_type][0]
@@ -723,7 +853,7 @@ class KatanaReader:
                 msg[6] = self.set_data_sysex[0]
                 self.patch_data[self.index] = mido.Message("sysex", data = msg)
                 self.index += 1
-
+            
             # --Reverb Type------------------------------------------------------------
 
             address = self.reverb_dictionary[self.patch_reverb_type][0]
@@ -771,21 +901,43 @@ class KatanaReader:
                 self.patch_data[self.index] = mido.Message("sysex", data = msg)
                 self.index += 1
 
+            self.patch_data = self.patch_data[0:self.index]
             # --END--------------------------------------------------------------------            
             print("Patch Reading complete")
-            
+
+            return True
+        
+        except:
+            return False
     
-    def save_to_temp_data(self) -> None:
+    def save_data(self, patch_route: str = "tempPatch.syx", chain_route: str = "tempChain.syx") -> None:
+
+        """Método para guardar los datos leidos del amplificador, en un archivo .syx.
         
-        mido.write_syx_file("tempPatch.syx", self.patch_data)
-        mido.write_syx_file("tempChain.syx", [self.patch_chain_message])
+        Parameters
+        ----------
+        patch_route : str
+            Ruta de almacenamiento, y nombre del archivo en el que guardar el patch.
+        chain_route : str
+            Ruta de almacenamiento, y nombre del archivo en el que guardar el chain.
+            
+        Returns
+        -------
+        list
+            Listado de bytes que se leen en la dirección dada.      
+        """
+
+
+
+        mido.write_syx_file(patch_route, self.patch_data)
+        mido.write_syx_file(chain_route, [self.patch_chain_message])
         
-        print(self.patch_enable_directory)
+        print("ToDo: implementar guardado de CSV")
 
         with open("tempPatchEnableDirectory.csv", "w") as f:
             for key in self.patch_enable_directory.keys():
                 f.write("%s,%s\n"%(key,self.patch_enable_directory[key]))
-
+        #print(self.patch_enable_directory)
 
 
 #    def readCurrentData(self):
@@ -799,14 +951,14 @@ class KatanaReader:
 #    def newBank(self):
 #        print("TODO")
 #
-#    def newChian(self):
+#    def newChain(self):
 #        print("TODO")
 #    
 #    def newPatch(self):
 #        print("TODO")
 
 
-def main():
+def read_test():
 
     katana_reader=KatanaReader()
  
@@ -815,10 +967,10 @@ def main():
 
     while connection_state =="Unplugged":
 
-        # Linux
-        # x = katana_reader.init_connection(input="KATANA 0", output="KATANA 1")    
         # Windows
-        x = katana_reader.init_connection(input="KATANA MIDI 1", output="KATANA MIDI 1")                  
+        x = katana_reader.init_connection(input="KATANA 0", output="KATANA 1")    
+        # Linux
+        #x = katana_reader.init_connection(input="KATANA MIDI 1", output="KATANA MIDI 1")                  
         
         if x == 1:
             connection_state = "plugged"
@@ -827,23 +979,136 @@ def main():
             time.sleep(5)
     
     katana_reader.read_current_patch_from_katana()
-    katana_reader.save_to_temp_data()
+
+    katana_reader.save_data()
     
-    # Lectura de prueba
-    #katana_reader.read_current_patch_from_katana()
+#def write_test():
+
+
+def read_write_test():
+
+    print(mido.get_output_names())
+
+    katana_reader=KatanaReader()
+ 
+    # Iniciar conexión con el katana
+    connection_state = "Unplugged"
+
+    while connection_state =="Unplugged":
+
+        # Windows
+        x = katana_reader.init_connection(input="KATANA 0", output="KATANA 1")    
+        # Linux
+        #x = katana_reader.init_connection(input="KATANA MIDI 1", output="KATANA MIDI 1")                  
+        
+        if x == 1:
+            connection_state = "plugged"
+        else:
+            print("NO se encuentra KATANA")
+            time.sleep(5)
+    
+    katana_reader.read_current_patch_from_katana()
     #value = katana_reader.readData([0x60,0x00,0x12,0x1F],[0x00,0x00,0x00,0x01])
     #print(value)
-    # Escritura de prueba
-    # msg = mido.Message("program_change", program=4)
-    # x = input("Cambie el parche actual  y presione Enter")
-    # katana_reader.katana_out.send(msg)
-    # for x in katana_reader.patch_data:        
-       # katana_reader.katana_out.send(x)
 
+    x = input("Cambie el parche actual  y presione Enter")
+
+    y = katana_reader.patch_data
+
+    for x in katana_reader.patch_data:        
+        katana_reader.katana_out.send(x)
+    
+       
+    katana_reader.katana_out.send(katana_reader.patch_chain_message)
+    print(katana_reader.patch_chain_message.bytes())
+
+    # Cambio de canal
+    # msg = mido.Message("program_change", program=4)
+    # katana_reader.katana_out.send(msg)
+
+def specific_read_test():
+    katana_reader=KatanaReader()
+ 
+    # Iniciar conexión con el katana
+    connection_state = "Unplugged"
+    print(mido.get_output_names())
+    while connection_state =="Unplugged":
+
+        # Windows
+        x = katana_reader.init_connection(input="KATANA 0", output="KATANA 1")    
+        # Linux
+        #x = katana_reader.init_connection(input="KATANA MIDI 1", output="KATANA MIDI 1")                  
+        
+        if x == 1:
+            connection_state = "plugged"
+        else:
+            print("NO se encuentra KATANA")
+            time.sleep(5)
+    print("Conectado")
+    #address = [0x00, 0x00, 0x04, 0x3E]
+    #offset = [2]
+    #msg = katana_reader.read_full_data(address, offset)
+
+    address = [0x00, 0x00, 0x04, 0x40]
+    offset = [0x00, 0x00, 0x00, 11]
+    msg = katana_reader.read_full_data(address, offset)
+    
+    print(msg[0])
+
+def specific_write_test():
+    katana_reader=KatanaReader()
+ 
+    # Iniciar conexión con el katana
+    connection_state = "Unplugged"
+    #print(mido.get_output_names())
+    while connection_state =="Unplugged":
+
+        # Windows
+        x = katana_reader.init_connection(input="KATANA 0", output="KATANA 1")    
+        # Linux
+        #x = katana_reader.init_connection(input="KATANA MIDI 1", output="KATANA MIDI 1")                  
+        
+        if x == 1:
+            connection_state = "plugged"
+        else:
+            print("NO se encuentra KATANA")
+            time.sleep(5)
+    print("Conectado")
+
+   
+    print("Primera lectura:")
+    address = [0x00, 0x00, 0x04, 0x40]
+    offset = [0x00, 0x00, 0x00, 11]
+    msg = katana_reader.read_full_data(address, offset)
+    
+    print(msg[0])
+
+    x = input("presione Enter")
+
+    print("Escritura:")
+    address = [0x00, 0x00, 0x04, 0x40]
+    data = [0x00, 0x16, 0x22, 0x30, 0x34, 0x13, 0x03, 0x05, 0x07,
+            0x02, 0x29]
+    
+    msg = mido.Message("sysex", data=(katana_reader.initial_tuple_sysex + katana_reader.set_data_sysex + address + 
+                                data + katana_reader.checksum(address,data)))
+    katana_reader.katana_out.send(msg)
+    print(msg)
+
+
+    x = input("presione Enter")
+
+    print("Segunda lectura:")
+    address = [0x00, 0x00, 0x04, 0x40]
+    offset = [0x00, 0x00, 0x00, 11]
+    msg = katana_reader.read_full_data(address, offset)
+    
+    print(msg[0])
+    #msg = katana_reader.read_full_data(address, data)
 
 
 if __name__ == "__main__":
-    main()
+    read_write_test()
 
         
         
